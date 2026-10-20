@@ -10,7 +10,7 @@ charts them. Started as a one-file script by Julia Wu (2023); David is taking it
   (see `.gitignore`). The script expects its inputs outside the repo, in a folder tree of
   `<account type>/<organisation>/<account name>/*.csv`. Never commit, paste into a doc or send anywhere
   a real transaction, balance or account number.
-- Plans live in `project_plans/` (see "Documents" below). Nothing is built until the plan is agreed.
+- Plans live in `project_plans/` (see "Documents" below). Stage 0 is built; later stages are planned with David before any starts.
 - Runs on the MacBook Air (zsh, throwaway venv outside the repo, `/venv/` is gitignored).
 
 ---
