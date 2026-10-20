@@ -20,7 +20,10 @@ money coming in is negative, for every account type (D9).
 | file | role |
 |---|---|
 | `main.py` | the whole pipeline; one formatter per issuer |
-| `test_main.py` | tests on made-up data |
+| `test_main.py`, `test_categorise.py` | tests on made-up data |
+| `categorise.py` | Stage 1: labels transfers (step 1.1); later categories. Reads the master, never edits it |
+| `measure_categories.py` | read-only: how much of the master the old category sources cover |
+| `master/transfer_report.csv` | every row labelled a transfer and how it was found; gitignored |
 | `inbox/<card>/` | where exports are dropped; contents gitignored |
 | `master/master.csv` | the merged record; gitignored |
 

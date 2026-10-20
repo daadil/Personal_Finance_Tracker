@@ -46,3 +46,12 @@ Append-only, newest at the end.
   79% of money-out rows but 22% of dollars; 70% of dollars are transfers (D11). So transfers first.
 - David chose: old 38-name list, proposal-and-approve review file for new payees (D12).
 - Wrote the Stage 1 spec in BUILD-STAGES with 1.1 in full. Nothing built yet.
+
+## 2026-10-19 (night, later)
+- Built `categorise.py --transfers-only` and `test_categorise.py` (8 tests pass; earlier tests still pass).
+- Measured the date window (D14): 8 pairs at every window from 1 day up; set to 3.
+- Real run: 122 transfer rows (16 paired, 106 by wording). Money out $360,485; transfers $237,840;
+  excluding transfers $122,645. Writes only `master/transfer_report.csv`; `master.csv` untouched.
+- Unlabelled but suspicious, for David's check (b): "PNP BILLPAYMENT" $5,105.85 and "MACYS ONLINE PMT" $1,775.53
+  in Ally Joint Checking look like payments to something, not spending in a category.
+- Gate NOT closed: needs David's checks (a), (b), (c).

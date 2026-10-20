@@ -70,3 +70,13 @@ become rules. Rejected: asking in the terminal each run (200+ distinct payees no
 Kind and Category are written to `master/categorised.csv`, rebuilt from the master and the rules. Rejected:
 adding category columns to `master.csv`, because the loader's duplicate check and the deleted exports make
 the master the only copy of the raw data, and a rules mistake would then be permanent.
+
+## D14. Transfer matching: 3-day window, wording rules kept short (2026-10-19, measured)
+Pair count by days apart on the 1,496-row master: 6 at 0 days, 8 at every window from 1 to 30. No pair
+is more than 1 day apart, so 3 days (slack for a weekend) finds everything a wider window does. Pairing
+is limited to checking and savings, one-to-one, different accounts: a card refund must never be read as a
+transfer. Only 8 pairs exist because the other side of most transfers is not in the data (BoA Checking,
+Chase, Fidelity and a CD are not loaded), so 106 rows are labelled by payee wording alone.
+Rejected: wording that could also be a real payment ("bill pay", Venmo, PayPal, Zelle). Those rows stay
+unlabelled and show up in the check for David. Cost: some true transfers (P2P cash-outs) stay unlabelled
+until he says so.

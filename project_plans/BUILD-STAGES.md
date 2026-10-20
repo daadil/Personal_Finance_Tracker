@@ -17,7 +17,7 @@ labelled BEFORE categories, or every total is meaningless. `master/master.csv` s
 edited by this stage; results go to a new derived file, `master/categorised.csv` (gitignored), made by a new
 script `categorise.py`. Rules live in `rules/` (gitignored: personal merchants).
 
-### 1.1 Find transfers (read-only report; nothing is written except a report file)
+### 1.1 Find transfers (read-only report; nothing is written except a report file). BUILT 2026-10-19; gate waiting on David's three checks
 Why read-only first: a wrong transfer label hides real spending, and the master is the only copy of the exports.
 1. Build `categorise.py` with a function that pairs money-out in one account with money-in in a different
    account: same amount, dates within N days. N is UNMEASURED: the script prints how many pairs are found at
