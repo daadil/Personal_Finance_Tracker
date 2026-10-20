@@ -1,155 +1,239 @@
-import pandas as pd, glob
-from datetime import datetime
+"""Personal finance tracker: bank export CSVs -> one master CSV.
 
-# Global Variables
-base_path = '/Users/juliawu/Desktop/David/'
-account_type = ['Checking', 'Credit Card', 'Savings']
-organization_name = ['Ally', 'American Express', 'Bank of America', 'Capital One', 'Chase', "Discover"]
+How it works:
+  1. Drop a card's exported CSV into  inbox/<card name>/
+  2. Run  python main.py
+  3. Each export is converted to the common format, compared with what the master
+     already holds for that card, and only the rows the master does not have yet are added.
+  4. Once the master file has been written, the export is deleted.
+     If anything goes wrong the export is left where it is.
 
-credit_card_name = ['AMEX Delta', 'BoA Customized Cash Rewards', 'BoA Premium Rewards', 'CO Savor One', 'Discover',
-                    'Chase Sapphire Preferred', 'Chase Amazon Prime']
-credit_card_filepath = [base_path + account_type[1] + '/' + organization_name[2] + '/' + credit_card_name[2] + '/',
-                        base_path + account_type[1] + '/' + organization_name[2] + '/' + credit_card_name[1] + '/',
-                        base_path + account_type[1] + '/' + organization_name[3] + '/' + credit_card_name[3] + '/',
-                        base_path + account_type[1] + '/' + organization_name[1] + '/' + credit_card_name[0] + '/',
-                        base_path + account_type[1] + '/' + organization_name[5] + '/' + credit_card_name[4] + '/',
-                        base_path + account_type[1] + '/' + organization_name[4] + '/' + credit_card_name[5] + '/',
-                        base_path + account_type[1] + '/' + organization_name[4] + '/' + credit_card_name[6] + '/']
+The common format has four columns: Posted Date (YYYY-MM-DD), Payee, Amount, Credit Card.
+A charge is a positive Amount, a refund is negative.
+"""
+import os
+import pandas as pd
+from pathlib import Path
 
+# ---------------------------------------------------------------------------
+# Where things live. Everything is relative to this file, so the repo can sit anywhere.
+# inbox/ and master/ are gitignored (except the .gitkeep files): financial data never goes in git.
+# ---------------------------------------------------------------------------
+BASE_PATH = Path(__file__).parent
+INBOX_PATH = BASE_PATH / 'inbox'
+MASTER_PATH = BASE_PATH / 'master' / 'master.csv'
 
-def create_cc_dfs(filepath, source):
-    # print(filepath + "\n create cc function executed")
-    df = []
-    files = glob.glob(filepath + "/*.csv")
-    for f in files:
-        csv = pd.read_csv(f)
-        df.append(csv)
-    df = pd.concat(df)
-    df = pd.DataFrame(df)
+# The four columns of the master file, in this order.
+MASTER_COLUMNS = ['Posted Date', 'Payee', 'Amount', 'Credit Card']
 
-    if source == credit_card_name[2]:
-        BoA_CC_Formatter(df)
-    if source == credit_card_name[1]:
-        BoA_CC_Formatter(df)
-    if source == credit_card_name[3]:
-        CO_CC_Formatter(df)  # TODO defination is not changing values correctly but does fire test0 print statement
-    if source == credit_card_name[0]:
-        AMEX_CC_Formatter(df)
-    if source == credit_card_name[4]:
-        Discover_CC_Formatter(df)
-    if source == credit_card_name[5]:
-        Chase_CC_Formatter(df)
-    if source == credit_card_name[6]:
-        Chase_CC_Formatter(df)
-    df['Credit Card'] = [source for i in range(len(df))]
-    df.sort_values(by=['Posted Date'])
-    return df
+# A row is "the same row" when all four of these match.
+DUPLICATE_KEY = ['Posted Date', 'Payee', 'Amount', 'Credit Card']
+
+# The inbox folder name for each card. Each folder name is also the value written to the
+# 'Credit Card' column. Add a new card by adding a name here, a formatter below, and a line in
+# FORMATTERS.
+CREDIT_CARD_NAMES = [
+    'AMEX Delta',
+    'BoA Customized Cash Rewards',
+    'BoA Premium Rewards',
+    'CO Savor One',
+    'Discover',
+    'Chase Sapphire Preferred',
+    'Chase Amazon Prime',
+]
 
 
-def AMEX_CC_Formatter(df):
-    return df
+# ---------------------------------------------------------------------------
+# Formatters. Each one takes the raw export (as pandas read it) and returns a table with exactly
+# Posted Date, Payee, Amount. They pick columns by NAME, not position, so a bank adding a column
+# does not silently shift everything. If a column is missing, the check in
+# check_columns() stops the file before anything is written.
+# ---------------------------------------------------------------------------
+
+# The columns each issuer's export must contain. Checked on a preview of the file's header.
+REQUIRED_COLUMNS = {
+    # BoA: Posted Date, Reference Number, Payee, Address, Amount  (charges are negative)
+    'BoA': ['Posted Date', 'Payee', 'Amount'],
+    # Capital One: Transaction Date, Posted Date, Card No., Description, Category, Debit, Credit
+    'CO': ['Posted Date', 'Description', 'Debit', 'Credit'],
+    # Chase: Transaction Date, Post Date, Description, Category, Type, Amount, Memo (charges are negative)
+    'Chase': ['Post Date', 'Description', 'Amount'],
+    # UNVERIFIED: the old script never converted AMEX or Discover, so these column names are the
+    # banks' usual ones, not checked against a real file. If a real export differs, the file is
+    # left in the inbox with a message saying which columns it found.
+    'AMEX': ['Date', 'Description', 'Amount'],
+    'Discover': ['Post Date', 'Description', 'Amount'],
+}
 
 
-def BoA_CC_Formatter(df):
-    df["Amount"] = (df["Amount"] * -1)
-    df["Posted Date"] = df["Posted Date"].strftime('%Y-%m-%d')
-    print(type(df))
-    df.drop(df.columns[[1, 3]], axis=1, inplace=True)
-    return df
+def format_boa(raw):
+    out = pd.DataFrame()
+    out['Posted Date'] = raw['Posted Date']
+    out['Payee'] = raw['Payee']
+    # BoA shows a charge as negative; the master wants a charge as positive.
+    out['Amount'] = raw['Amount'] * -1
+    return out
 
 
-def CO_CC_Formatter(df):
-    df["Credit"] = (df["Credit"] * -1)
-    df.rename(columns={"Debit": "Amount"}, inplace=True)
-    df["Amount"] = df["Amount"].combine_first(df["Credit"].astype(
-        float))  # keeps the columns but doesn't keep the negative https://www.datasciencelearner.com/how-to-merge-two-columns-in-pandas/#:~:text=How%20to%20Merge%20Two%20Columns%20in%20Pandas%20%3F,dataframe.%20...%203%20Step%203%3A%20Apply%20the%20approaches
-    df.rename(columns={"Description": "Payee"}, inplace=True)
-    df.drop(df.columns[[0, 2, 4, 6]], axis=1, inplace=True)
-    return df
+def format_capital_one(raw):
+    out = pd.DataFrame()
+    out['Posted Date'] = raw['Posted Date']
+    out['Payee'] = raw['Description']
+    # Capital One puts charges in 'Debit' and refunds/payments in 'Credit', leaving the other blank.
+    # Charge = Debit as is. Refund = Credit made negative. A blank cell reads as 0.
+    out['Amount'] = raw['Debit'].fillna(0) - raw['Credit'].fillna(0)
+    return out
 
 
-def Chase_CC_Formatter(df):
-    df["Amount"] = (df["Amount"] * -1)
-    df.rename(columns={"Description": "Payee"}, inplace=True)
-    df.rename(columns={"Post Date": "Posted Date"}, inplace=True)
-    df.drop(df.columns[[0, 3, 4, 6]], axis=1,
-            inplace=True)  # TODO - Utilize "Type" column for logic, see raw data for column referance
-    return df
+def format_chase(raw):
+    out = pd.DataFrame()
+    out['Posted Date'] = raw['Post Date']
+    out['Payee'] = raw['Description']
+    # Chase shows a charge as negative; the master wants a charge as positive.
+    out['Amount'] = raw['Amount'] * -1
+    return out
 
 
-def Discover_CC_Formatter(df):
-    return df
+def format_amex(raw):
+    out = pd.DataFrame()
+    out['Posted Date'] = raw['Date']
+    out['Payee'] = raw['Description']
+    # AMEX already shows a charge as positive.
+    out['Amount'] = raw['Amount']
+    return out
 
 
-try:
-    BoA_Premium_Rewards_df = create_cc_dfs(credit_card_filepath[0], credit_card_name[2])
-except:
-    print("No data available. Creating blank df.")
-    BoA_Premium_Rewards_df = []
-try:
-    BoA_Cash_Rewards_df = create_cc_dfs(credit_card_filepath[1], credit_card_name[1])
-except:
-    print("No data available. Creating blank df.")
-    BoA_Cash_Rewards_df = []
-try:
-    CO_Savor_df = create_cc_dfs(credit_card_filepath[2], credit_card_name[3])
-except:
-    print("No data available. Creating blank df.")
-    CO_Savor_df = []
-try:
-    AMEX_df = create_cc_dfs(credit_card_filepath[3], credit_card_name[0])
-except:
-    print("No data available. Creating blank df.")
-    AMEX_df = []
-try:
-    Discover_df = create_cc_dfs(credit_card_filepath[4], credit_card_name[4])
-except:
-    print("No data available. Creating blank df.")
-    Discover_df = []
-try:
-    Chase_Sapphire_df = create_cc_dfs(credit_card_filepath[5], credit_card_name[5])
-except:
-    print("No data available. Creating blank df.")
-    Chase_Sapphire_df = []
-try:
-    Chase_Amazon_df = create_cc_dfs(credit_card_filepath[6], credit_card_name[6])
-except:
-    print("No data available. Creating blank df.")
-    Chase_Amazon_df = []
+def format_discover(raw):
+    out = pd.DataFrame()
+    out['Posted Date'] = raw['Post Date']
+    out['Payee'] = raw['Description']
+    # Discover already shows a charge as positive.
+    out['Amount'] = raw['Amount']
+    return out
 
-# Merge dfs into one
-# frames = [BoA_Premium_Rewards_df, BoA_Cash_Rewards_df, CO_Savor_df, Chase_Sapphire_df]
-# all_Credit_Cards = pd.concat(frames)
-# all_Credit_Cards = all_Credit_Cards.sort_values(by='Posted Date', ascending=False)
 
-# Outputting Credit Cards to csv files
-BoA_Premium_Rewards_df.to_csv(base_path + '/Output/BoA Premium Rewards Output.csv', index=False)
-# BoA_Cash_Rewards_df.to_csv(base_path + '/Output/BoA Cash Rewards Output.csv', index=False)
-# CO_Savor_df.to_csv(base_path + '/Output/CO Savor Output.csv', index=False)
-# Chase_Sapphire_df.to_csv(base_path + '/Output/Chase Sapphire Output.csv', index=False)
-# all_Credit_Cards.to_csv(base_path + '/Output/All Credit Cards Output.csv', index=False)
+# For each card: which column check to run and which formatter to use.
+FORMATTERS = {
+    'AMEX Delta': ('AMEX', format_amex),
+    'BoA Customized Cash Rewards': ('BoA', format_boa),
+    'BoA Premium Rewards': ('BoA', format_boa),
+    'CO Savor One': ('CO', format_capital_one),
+    'Discover': ('Discover', format_discover),
+    'Chase Sapphire Preferred': ('Chase', format_chase),
+    'Chase Amazon Prime': ('Chase', format_chase),
+}
 
-# Outputting Credit Cards data to a single xlsx file
-# with pd.ExcelWriter(base_path + '/Output/All Credit Cards Output.xlsx', engine='xlsxwriter') as writer:
-#     all_Credit_Cards.to_excel(writer, sheet_name='All Cards', index=False)
-#     BoA_Premium_Rewards_df.to_excel(writer, sheet_name='BoA Premium', index=False)
-#     BoA_Cash_Rewards_df.to_excel(writer, sheet_name='BoA Cash', index=False)
-#     CO_Savor_df.to_excel(writer, sheet_name='CO Savor', index=False)
-#     Chase_Sapphire_df.to_excel(writer, sheet_name='Chase Sapphire', index=False)
-exit()
 
-# TODO - Set all date data to Year-Month-Day
-# TODO - Ingest remaining credit cards with raw formats
-# TODO - Modify CC data so they are all in the similar format, Keep only posted date, payee, amount
-#  (shown as a positive number for a charge), drop payments, handle returns
-# TODO - Anticipate the next annual fee, create calendar reminder
-# TODO - Ingest all checking accounts (setup similar to CC)
-# TODO - Ingest all savings accounts (setup similar to CC)
-# TODO - Get updated data
-# TODO - Figure out way to categorize data
-# TODO - For CC only, add transaction type and calculate cash or point transaction type logic (resturant = 3% back)
-# TODO - For CC only, calculate the number of points/amount of cash back on purchase based on
-#  type of purchase (resturant = 3% back)
-# TODO - Graphically display all data and have it interactable (set filters)
-# TODO - check data if it's stale, aka, if last posted date is greater than 45 days then alert the user with print
-#  statement that says "possible stale data, please add newest csv"
+# ---------------------------------------------------------------------------
+# Reading one export
+# ---------------------------------------------------------------------------
+def check_columns(csv_path, card_name):
+    """Preview only the header row. Raises ValueError if a required column is missing."""
+    issuer, _ = FORMATTERS[card_name]
+    header = pd.read_csv(csv_path, nrows=0)
+    missing = [c for c in REQUIRED_COLUMNS[issuer] if c not in header.columns]
+    if missing:
+        raise ValueError(f"missing column(s) {missing}; the file has {list(header.columns)}")
+
+
+def read_export(csv_path, card_name):
+    """Read one export and return it in the common format (Posted Date, Payee, Amount, Credit Card)."""
+    check_columns(csv_path, card_name)
+    _, formatter = FORMATTERS[card_name]
+    raw = pd.read_csv(csv_path)
+    rows = formatter(raw)
+
+    # Dates to Year-Month-Day, so every card sorts and compares the same way.
+    rows['Posted Date'] = pd.to_datetime(rows['Posted Date']).dt.strftime('%Y-%m-%d')
+    # Two decimals, so 12.5 and 12.50 count as the same amount when comparing rows.
+    rows['Amount'] = rows['Amount'].astype(float).round(2)
+    rows['Payee'] = rows['Payee'].astype(str).str.strip()
+    rows['Credit Card'] = card_name
+
+    # A blank date or amount means the export was cut off or malformed; stop rather than guess.
+    if rows['Posted Date'].isna().any() or rows['Amount'].isna().any():
+        raise ValueError("some rows have no date or no amount")
+    return rows[MASTER_COLUMNS]
+
+
+# ---------------------------------------------------------------------------
+# Comparing with the master
+# ---------------------------------------------------------------------------
+def read_master():
+    """Return the master table, or an empty one if the master does not exist yet."""
+    if not MASTER_PATH.exists():
+        return pd.DataFrame(columns=MASTER_COLUMNS)
+    master = pd.read_csv(MASTER_PATH)
+    master['Amount'] = master['Amount'].astype(float).round(2)
+    return master
+
+
+def find_new_rows(export_rows, master):
+    """Return only the rows of the export that the master does not already have.
+
+    Rows are matched on DUPLICATE_KEY. Matching is by COUNT, not just by presence: if the export
+    has two identical $4.50 coffees on one day and the master has one, one is new. That keeps a
+    real repeat purchase, and still drops a re-dropped file (every count already matches).
+    """
+    # Number the identical rows within each group: 0, 1, 2, ...
+    export_rows = export_rows.copy()
+    export_rows['_n'] = export_rows.groupby(DUPLICATE_KEY).cumcount()
+
+    # Count how many of each the master already has.
+    master_counts = master.groupby(DUPLICATE_KEY).size().rename('_have').reset_index()
+    export_rows = export_rows.merge(master_counts, on=DUPLICATE_KEY, how='left')
+    export_rows['_have'] = export_rows['_have'].fillna(0)
+
+    # The k-th identical row (counting from 0) is new only if the master has k or fewer of them.
+    new_rows = export_rows[export_rows['_n'] >= export_rows['_have']]
+    return new_rows[MASTER_COLUMNS]
+
+
+def write_master(master):
+    """Write the master to a temp file, then swap it in, so a crash cannot leave half a master."""
+    MASTER_PATH.parent.mkdir(exist_ok=True)
+    master = master.sort_values(by=['Posted Date', 'Credit Card'], kind='stable')
+    temp_path = MASTER_PATH.with_name('master.csv.tmp')
+    master.to_csv(temp_path, index=False)
+    os.replace(temp_path, MASTER_PATH)
+
+
+# ---------------------------------------------------------------------------
+# The run
+# ---------------------------------------------------------------------------
+def process_inbox():
+    """Go through every card folder in the inbox. Returns a list of plain-English result lines."""
+    results = []
+    for card_name in CREDIT_CARD_NAMES:
+        card_folder = INBOX_PATH / card_name
+        card_folder.mkdir(parents=True, exist_ok=True)
+
+        for csv_path in sorted(card_folder.glob('*.csv')):
+            try:
+                export_rows = read_export(csv_path, card_name)
+                master = read_master()
+                new_rows = find_new_rows(export_rows, master)
+
+                if len(new_rows) > 0:
+                    write_master(pd.concat([master, new_rows], ignore_index=True))
+
+                # Reached only after the master was written (or nothing needed writing).
+                csv_path.unlink()
+                results.append(f"{card_name} / {csv_path.name}: {len(new_rows)} new rows added, "
+                               f"{len(export_rows) - len(new_rows)} already in master. Export deleted.")
+            except Exception as error:
+                # Leave the file where it is so nothing is lost, and say why.
+                results.append(f"{card_name} / {csv_path.name}: NOT LOADED, file kept. {error}")
+
+    # A CSV dropped in the wrong place would otherwise sit there unnoticed.
+    for stray in INBOX_PATH.glob('*.csv'):
+        results.append(f"{stray.name}: NOT LOADED. Put it in a card folder inside inbox/.")
+    return results
+
+
+if __name__ == '__main__':
+    lines = process_inbox()
+    if not lines:
+        print("Inbox is empty. Drop exports into inbox/<card name>/ and run again.")
+    for line in lines:
+        print(line)

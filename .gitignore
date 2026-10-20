@@ -1,2 +1,20 @@
 # Project exclude paths
 /venv/
+.venv/
+
+# Financial data: never commit. Exports, outputs and spreadsheets stay on this Mac.
+/data/
+/Output/
+*.csv
+*.xlsx
+*.xls
+*.qfx
+*.ofx
+*.pdf
+
+# Master file and anything dropped in the inbox (only the .gitkeep placeholders are tracked)
+/master/
+/inbox/*/*
+!/inbox/*/.gitkeep
+
+__pycache__/
