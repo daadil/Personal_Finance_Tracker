@@ -18,8 +18,8 @@ Commands for running the tracker (zsh, MacBook Air).
 1. `~/venvs/finance-tracker/bin/python test_main.py`
 
 ## GitHub: make `main` the default branch and delete the old `master` (one time)
-1. Open https://github.com/daadil/Personal_Finance_Tracker/settings/branches
-2. Default branch: click the switch icon, choose `main`, click Update, confirm.
+1. Open https://github.com/daadil/Personal_Finance_Tracker/settings (the General page; the Branches page no longer has this setting)
+2. Scroll to "Default branch": click the switch icon, choose `main`, click Update, confirm.
 3. Open https://github.com/daadil/Personal_Finance_Tracker/branches
 4. Click the bin icon on the `master` row, confirm.
 5. In the terminal: `cd ~/Documents/GitHub/Personal_Finance_Tracker && git fetch --prune`
