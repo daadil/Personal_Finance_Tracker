@@ -16,3 +16,14 @@ Append-only, newest at the end.
   refunds, adjustments and cash-back credits. Added `PAYMENT_WORDS` (D6) and removed the 36 from the
   master (backup kept as `master/master.csv.bak`, gitignored). Master is now 282 rows. Tests still pass.
 - Not verified: master totals against a real statement (Stage 0 gate).
+
+## 2026-10-19 (later)
+- David gave the project's goal (D7) and reference material (D8): old script, config, Mapping.xlsx,
+  workflow PDF, and the Expense Tracker sheet. Read all of them; recorded in ARCHITECTURE and ACTION-ITEMS #13-18.
+- Decided: cash-back credits and refunds are kept.
+- New inbox folders for Ally, BoA and Chase accounts. Verified with `git check-ignore` that data files,
+  `master/` and `reference/` are ignored and `git ls-files` lists no csv/xlsx/pdf.
+- Dry run (nothing written or deleted) over the credit-card folders: BoA Cash 19 files, BoA Premium 18,
+  Capital One 2 more, all parse. BoA payments were loading as spending, so BoA payment wording was added to
+  `PAYMENT_WORDS` (tests still pass). This confirms the BoA column names on real data.
+- Not done: loading the BoA and older Capital One files for real.

@@ -18,3 +18,7 @@
 !/inbox/*/.gitkeep
 
 __pycache__/
+
+# Reference material from the old tracker (merchant lists, workflow diagram): personal, stays on this Mac
+/reference/
+.DS_Store

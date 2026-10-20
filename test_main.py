@@ -8,7 +8,8 @@ import main
 BOA = "Posted Date,Reference Number,Payee,Address,Amount\n" \
       "01/05/2026,1,COFFEE SHOP,SEATTLE WA,-4.50\n" \
       "01/05/2026,2,COFFEE SHOP,SEATTLE WA,-4.50\n" \
-      "01/06/2026,3,REFUND STORE,SEATTLE WA,20.00\n"
+      "01/06/2026,3,REFUND STORE,SEATTLE WA,20.00\n" \
+      "01/07/2026,4,PAYMENT - THANK YOU,,1857.56\n"
 CAPITAL_ONE = "Transaction Date,Posted Date,Card No.,Description,Category,Debit,Credit\n" \
               "2026-01-04,2026-01-05,1234,GROCERY,Merchandise,12.5,\n" \
               "2026-01-05,2026-01-06,1234,RETURN,Merchandise,,7.25\n" \

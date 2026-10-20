@@ -24,3 +24,17 @@ Posted Date (YYYY-MM-DD), Payee, Amount (charge positive, refund negative), Cred
 
 ## Not built yet
 Checking and savings accounts, categories, rewards maths, charts. See BUILD-STAGES.md.
+
+## Reference material (`reference/`, gitignored)
+| file | what it is |
+|---|---|
+| `Finance_TrackerV1.py` | the 2023 script: loads 14 account folders, categorises by keyword, sums per category, writes xlsx. Never finished; AMEX/Discover/Chase Amazon commented out |
+| `config.py` | its settings: account lists and keyword lists per category (about 38 categories) |
+| `Mapping.xlsx` | about 600 payees mapped to Store and Category |
+| `financial_workflow.pdf` | diagram of the 2020 finance set-up (see ACTION-ITEMS #15) |
+| Google Sheet `Expense Tracker` | the spreadsheet this replaces (tabs in ACTION-ITEMS #17) |
+
+## Inbox folders
+Credit cards (read by `main.py`): one folder per card in `inbox/`.
+Accounts (not read yet, ACTION-ITEMS #5, #6): `inbox/Ally/{DA Personal Savings, Joint Checking, Joint Savings}`,
+`inbox/BoA/{Checking, Savings}`, `inbox/Chase/{Checking, Savings}`. Everything inside `inbox/*/*` is gitignored.

@@ -4,12 +4,15 @@
 
 Personal finance tracker (GitHub `daadil/Personal_Finance_Tracker`). A Python/pandas script that reads
 bank and credit-card CSV exports, normalises them to one format and (planned) categorises, totals and
-charts them. Started as a one-file script by Julia Wu (2023); David is taking it over.
+charts them. Goal (DECISIONS D7): a local replacement for Rocket Money and for David's `Expense Tracker`
+Google Sheet. Started as a one-file script by Julia Wu (2023); David is taking it over.
 
 - **Financial data never goes in git.** The CSV exports and the script's `Output/` are gitignored
   (see `.gitignore`). The script expects its inputs outside the repo, in a folder tree of
   `<account type>/<organisation>/<account name>/*.csv`. Never commit, paste into a doc or send anywhere
   a real transaction, balance or account number.
+- `reference/` (gitignored) holds the old 2023 script, its merchant lists, `Mapping.xlsx` and the 2020
+  `financial_workflow.pdf` diagram. Read ARCHITECTURE.md before using them.
 - Plans live in `project_plans/` (see "Documents" below). Stage 0 is built; later stages are planned with David before any starts.
 - Runs on the MacBook Air (zsh, throwaway venv outside the repo, `/venv/` is gitignored).
 

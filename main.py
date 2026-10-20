@@ -48,6 +48,9 @@ CREDIT_CARD_NAMES = [
 # are listed; the others still load their payments (ACTION-ITEMS #1).
 PAYMENT_WORDS = {
     'CO Savor One': ['PYMT'],  # CAPITAL ONE MOBILE PYMT / AUTOPAY PYMT / ONLINE PYMT
+    # BoA, checked on 2022-2023 exports of both cards. Refunds (Home Depot, Rover...) are not matched.
+    'BoA Customized Cash Rewards': ['PAYMENT - THANK YOU', 'ONLINE PAYMENT FROM', 'PYMT TRANSFER'],
+    'BoA Premium Rewards': ['PAYMENT - THANK YOU', 'ONLINE PAYMENT FROM', 'PYMT TRANSFER'],
 }
 
 
