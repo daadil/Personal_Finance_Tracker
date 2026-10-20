@@ -2,8 +2,11 @@
 
 Permanently numbered. A resolved item keeps its number and loses its detail.
 
-1. Payments are not dropped yet (the master still holds card payments as negative amounts).
-   Chase has a `Type` column that marks them; BoA and Capital One need checking against real files.
+1. Card payments are left out for Capital One only (payee contains "PYMT", checked on real data
+   2026-10-19). Every other card still loads its payments. Find each card's payment wording on its
+   first real export (Chase has a `Type` column that marks them), then add it to `PAYMENT_WORDS`.
+   Capital One also has cash-back credits in the master (CASH AUTO REDEMPTION, CASH BACK,
+   CREDIT-CASH BACK REWARD); they are rewards, not refunds. Decide whether to keep them.
 2. Returns: a refund is a negative amount, kept as is. Decide whether it should be linked to the
    original purchase.
 3. AMEX and Discover column names are UNVERIFIED (the old script never converted them). Drop one real

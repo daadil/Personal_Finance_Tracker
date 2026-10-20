@@ -22,3 +22,9 @@ The old script dropped columns by index, so a bank adding a column would silentl
 
 ## D5. Default branch is `main` (2026-10-19)
 Renamed from `master` to follow the template.
+
+## D6. Payments are dropped by payee wording, one card at a time (2026-10-19)
+A payment is not spending, so it is left out at load and counted in the result line. The wording is
+set per card in `PAYMENT_WORDS` only after it has been seen in a real export (Capital One: "PYMT").
+Rejected: dropping every negative amount (that would also drop real refunds, 10 of 46 negative rows
+in the first Capital One load). Cost: each new card needs a look at its real data first.

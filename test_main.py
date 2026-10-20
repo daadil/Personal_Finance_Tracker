@@ -11,7 +11,8 @@ BOA = "Posted Date,Reference Number,Payee,Address,Amount\n" \
       "01/06/2026,3,REFUND STORE,SEATTLE WA,20.00\n"
 CAPITAL_ONE = "Transaction Date,Posted Date,Card No.,Description,Category,Debit,Credit\n" \
               "2026-01-04,2026-01-05,1234,GROCERY,Merchandise,12.5,\n" \
-              "2026-01-05,2026-01-06,1234,RETURN,Merchandise,,7.25\n"
+              "2026-01-05,2026-01-06,1234,RETURN,Merchandise,,7.25\n" \
+              "2026-01-05,2026-01-06,1234,CAPITAL ONE MOBILE PYMT,Payment/Credit,,500.00\n"
 CHASE = "Transaction Date,Post Date,Description,Category,Type,Amount,Memo\n" \
         "01/04/2026,01/05/2026,GAS STATION,Gas,Sale,-30.00,\n"
 
@@ -42,7 +43,7 @@ def test_load_and_delete():
     boa = master[master['Credit Card'] == 'BoA Premium Rewards']
     assert sorted(boa['Amount']) == [-20.0, 4.5, 4.5]
     co = master[master['Credit Card'] == 'CO Savor One']
-    assert sorted(co['Amount']) == [-7.25, 12.5]
+    assert sorted(co['Amount']) == [-7.25, 12.5]  # the PYMT row is not here
     assert master[master['Payee'] == 'GAS STATION']['Amount'].iloc[0] == 30.0
     assert set(master['Posted Date']) == {'2026-01-05', '2026-01-06'}
     # all three exports deleted

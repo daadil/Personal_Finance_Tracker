@@ -43,6 +43,14 @@ CREDIT_CARD_NAMES = [
 ]
 
 
+# Payments to the card are not spending, so they are left out. A row is a payment when its Payee
+# contains one of these words. Only cards whose payment wording has been checked against real data
+# are listed; the others still load their payments (ACTION-ITEMS #1).
+PAYMENT_WORDS = {
+    'CO Savor One': ['PYMT'],  # CAPITAL ONE MOBILE PYMT / AUTOPAY PYMT / ONLINE PYMT
+}
+
+
 # ---------------------------------------------------------------------------
 # Formatters. Each one takes the raw export (as pandas read it) and returns a table with exactly
 # Posted Date, Payee, Amount. They pick columns by NAME, not position, so a bank adding a column
@@ -137,7 +145,7 @@ def check_columns(csv_path, card_name):
 
 
 def read_export(csv_path, card_name):
-    """Read one export and return it in the common format (Posted Date, Payee, Amount, Credit Card)."""
+    """Read one export. Returns (rows in the common format, number of payment rows left out)."""
     check_columns(csv_path, card_name)
     _, formatter = FORMATTERS[card_name]
     raw = pd.read_csv(csv_path)
@@ -153,7 +161,12 @@ def read_export(csv_path, card_name):
     # A blank date or amount means the export was cut off or malformed; stop rather than guess.
     if rows['Posted Date'].isna().any() or rows['Amount'].isna().any():
         raise ValueError("some rows have no date or no amount")
-    return rows[MASTER_COLUMNS]
+
+    # Leave out payments to the card, and count them so the result line can report it.
+    is_payment = pd.Series(False, index=rows.index)
+    for word in PAYMENT_WORDS.get(card_name, []):
+        is_payment = is_payment | rows['Payee'].str.contains(word, case=False, regex=False)
+    return rows[~is_payment][MASTER_COLUMNS].reset_index(drop=True), int(is_payment.sum())
 
 
 # ---------------------------------------------------------------------------
@@ -210,7 +223,7 @@ def process_inbox():
 
         for csv_path in sorted(card_folder.glob('*.csv')):
             try:
-                export_rows = read_export(csv_path, card_name)
+                export_rows, payments_skipped = read_export(csv_path, card_name)
                 master = read_master()
                 new_rows = find_new_rows(export_rows, master)
 
@@ -220,7 +233,8 @@ def process_inbox():
                 # Reached only after the master was written (or nothing needed writing).
                 csv_path.unlink()
                 results.append(f"{card_name} / {csv_path.name}: {len(new_rows)} new rows added, "
-                               f"{len(export_rows) - len(new_rows)} already in master. Export deleted.")
+                               f"{len(export_rows) - len(new_rows)} already in master, "
+                               f"{payments_skipped} payments left out. Export deleted.")
             except Exception as error:
                 # Leave the file where it is so nothing is lost, and say why.
                 results.append(f"{card_name} / {csv_path.name}: NOT LOADED, file kept. {error}")
