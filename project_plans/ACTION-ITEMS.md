@@ -13,10 +13,10 @@ Permanently numbered. A resolved item keeps its number and loses its detail.
 3. AMEX and Discover column names are UNVERIFIED (the old script never converted them). Drop one real
    export of each and confirm; a mismatch leaves the file in the inbox with the columns it found.
 4. Anticipate each card's next annual fee and create a calendar reminder.
-5. Ingest checking accounts (same inbox pattern). Folders exist in `inbox/` (Ally, BoA, Chase); `main.py`
-   does not read them yet. See #13 for the export layouts seen in the old script.
-6. Ingest savings accounts (same inbox pattern). Same as #5.
-7. Categorise transactions (method not chosen).
+5. Ingest checking accounts: Ally Joint Checking is loaded and verified on a real export. BoA Checking and
+   Chase Checking have no export yet; their formats are UNVERIFIED (see #13).
+6. Ingest savings accounts: Ally (2 accounts) and BoA Savings are loaded and verified. Chase Savings has no
+   export yet (#13).
 8. Credit cards only: transaction type and cash-vs-points logic (restaurant = 3% back).
 9. Credit cards only: points / cash back earned per purchase.
 10. Chart all data, interactive, with filters.
@@ -25,12 +25,13 @@ Permanently numbered. A resolved item keeps its number and loses its detail.
 12. Overlapping exports are de-duplicated by matching rows (date, payee, amount, card), not by date
     range. Identical rows are matched by count, so two real identical purchases survive, but they are
     kept only up to the largest count that any single export shows.
-13. Account layouts for checking/savings, from the 2023 script (UNVERIFIED against today's exports):
-    Ally: `Date, Time, Amount, Type, Description` (some exports pad the names with a leading space).
-    BoA checking and savings: 6 summary lines above the real header, then `Date, Description, Amount, Balance`.
-    Chase checking: `Details, Posting Date, Description, Amount, Type, Balance, Check or Slip #`.
-    The loader needs a folder-per-account list like `CREDIT_CARD_NAMES` and its own `PAYMENT_WORDS`-style
-    rule for transfers between David's own accounts (a transfer is not spending or income).
+13. Account layouts. VERIFIED on real exports (2026-10-19): Ally (`Date, Time, Amount, Type, Description`, names
+    padded with a space) and BoA Savings (6 summary lines, blank line, `Date, Description, Amount, Running Bal.`,
+    a blank-amount "Beginning balance" row, amounts with thousands commas). UNVERIFIED: BoA Checking (assumed
+    same as BoA Savings), Chase Checking and Savings (`Details, Posting Date, Description, Amount, Type,
+    Balance, Check or Slip #`, from the 2023 script). Transfers between David's own accounts are loaded as
+    ordinary rows for now ("Surprise Savings Booster Transfer", card payments seen from the bank side);
+    they are neither spending nor income, and #14 must separate them or every total double counts.
 14. Keep refunds and cash-back visible, not mixed into spending. Add a transaction kind (purchase, refund,
     cash back, fee, transfer) so reports can show or hide each. Refunds net against their category.
 15. UPDATE THE FINANCIAL WORKFLOW DIAGRAM. `reference/financial_workflow.pdf` is the 2020 set-up (last
@@ -38,12 +39,12 @@ Permanently numbered. A resolved item keeps its number and loses its detail.
     earn rates and annual fee. Redraw it for today's accounts in the SAME STYLE: boxes with logos for
     accounts and cards, yellow sticky notes for rules ("transfer excess $x to maintain $20k-$22k"), diamonds
     for decisions, dashed coloured zones per account type, and one card-detail panel per card with annual
-    fee and a "Need Renewal Date" note where it is missing. Drawing tool not chosen (the PDF looks like a
-    diagram-editor export); decide with David. Also feeds #4 (annual-fee reminders: renewal dates are blank
+    fee and a "Need Renewal Date" note where it is missing. DECIDED 2026-10-19 (David): draw it in diagrams.net (draw.io), saved as a
+    `.drawio` file. Also feeds #4 (annual-fee reminders: renewal dates are blank
     in the old diagram).
 16. Rocket Money parity (from general knowledge of the product, not checked against its site): categorised
     spending, recurring bills and subscription detection, per-category budgets, spending trends, net worth
-    across accounts, alerts. Pick which of these matter and in what order; this is the Stage 1+ plan.
+    across accounts, alerts. DECIDED 2026-10-19 (David): categories (#18) come first. The rest is ordered after Stage 0 closes.
 17. Expense Tracker sheet parity (`Expense Tracker`, Google Sheets). Its tabs: Expenses (form entry),
     CSV Ingest, Date Metrics (savings per year), Monthly Expenses per year (each category by month, a
     total row and a monthly-budget row), MappingTable. The new tool must reproduce the monthly-by-category

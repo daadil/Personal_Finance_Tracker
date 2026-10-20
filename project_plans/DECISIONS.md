@@ -40,3 +40,15 @@ The old 2023 script, its config (merchant lists), `Mapping.xlsx` and the workflo
 any session can find them. They hold personal merchants and account detail, so they are never committed.
 Rejected: committing the scripts alone (the merchant lists are personal). Cost: a fresh clone has no
 reference folder; the originals are in David's Google Drive.
+
+## D9. One master for every account type; money leaving is positive (2026-10-19)
+Checking and savings go in the same master as cards. The column `Credit Card` became `Account` and a new
+`Account Type` column (Credit Card, Checking, Savings) was added; the 1,261 existing rows were migrated.
+The sign rule is the same for all: money leaving the account is positive, money coming in is negative, so a
+card charge and a checking withdrawal read alike and a deposit reads like a refund. Rejected: one file per
+account type (the old script) because transfers and net worth need all accounts side by side. Cost: a
+transfer shows up twice (out of one account, into another) until ACTION-ITEMS #14 labels it.
+
+## D10. Order of work after Stage 0 (2026-10-19, David)
+Categories first (ACTION-ITEMS #18), because budgets, roll-ups and subscriptions all need them. Diagram tool:
+draw.io (#15).

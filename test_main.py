@@ -41,9 +41,9 @@ def test_load_and_delete():
     master = pd.read_csv(main.MASTER_PATH)
     assert len(master) == 6, master
     # charges positive, refunds negative, dates Year-Month-Day
-    boa = master[master['Credit Card'] == 'BoA Premium Rewards']
+    boa = master[master['Account'] == 'BoA Premium Rewards']
     assert sorted(boa['Amount']) == [-20.0, 4.5, 4.5]
-    co = master[master['Credit Card'] == 'CO Savor One']
+    co = master[master['Account'] == 'CO Savor One']
     assert sorted(co['Amount']) == [-7.25, 12.5]  # the PYMT row is not here
     assert master[master['Payee'] == 'GAS STATION']['Amount'].iloc[0] == 30.0
     assert set(master['Posted Date']) == {'2026-01-05', '2026-01-06'}
@@ -88,6 +88,49 @@ def test_bad_file_is_kept_and_master_untouched():
     assert 'NOT LOADED' in results[0]
     assert (main.INBOX_PATH / 'BoA Premium Rewards' / 'bad.csv').exists()
     assert not main.MASTER_PATH.exists()
+
+
+# Ally pads some column names with a space, as the real export does.
+ALLY = "Date, Time, Amount, Type, Description\n" \
+       "2026-03-05,23:26:19,15.28,Deposit,Interest Paid\n" \
+       "2026-03-01,14:58:10,-14.00,Withdrawal,Transfer to Savings\n"
+# BoA checking/savings: summary lines, a blank line, then the real header. Amounts carry commas.
+BOA_BANK = "Description,,Summary Amt.\n" \
+           "Beginning balance as of 01/01/2026,,\"100.00\"\n" \
+           "Total credits,,\"20,000.00\"\n" \
+           "\n" \
+           "Date,Description,Amount,Running Bal.\n" \
+           "01/01/2026,Beginning balance as of 01/01/2026,,\"100.00\"\n" \
+           "01/02/2026,DEPOSIT FROM EMPLOYER,\"20,000.00\",\"20,100.00\"\n" \
+           "01/03/2026,TRANSFER OUT,-250.00,\"19,850.00\"\n"
+
+
+def test_ally_deposit_is_negative_and_withdrawal_positive():
+    new_sandbox()
+    drop('Ally/Joint Checking', 'Checking.csv', ALLY)
+    main.process_inbox()
+    master = pd.read_csv(main.MASTER_PATH)
+    assert set(master['Account']) == {'Ally Joint Checking'}
+    assert set(master['Account Type']) == {'Checking'}
+    assert sorted(master['Amount']) == [-15.28, 14.0]
+
+
+def test_boa_bank_summary_lines_and_beginning_balance_are_skipped():
+    new_sandbox()
+    drop('BoA/Savings', 'stmt.csv', BOA_BANK)
+    main.process_inbox()
+    master = pd.read_csv(main.MASTER_PATH)
+    assert len(master) == 2, master
+    assert sorted(master['Amount']) == [-20000.0, 250.0]
+    assert set(master['Account Type']) == {'Savings'}
+
+
+def test_csv_in_a_bank_folder_is_reported_and_kept():
+    new_sandbox()
+    drop('Ally', 'oops.csv', ALLY)
+    results = main.process_inbox()
+    assert any('oops.csv' in r and 'NOT LOADED' in r for r in results)
+    assert (main.INBOX_PATH / 'Ally' / 'oops.csv').exists()
 
 
 def test_stray_csv_in_inbox_root_is_reported_and_kept():

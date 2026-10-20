@@ -3,16 +3,18 @@
 What exists and how it works. (Why it was chosen: DECISIONS.md.)
 
 ## Flow
-inbox/<card name>/*.csv  ->  main.py  ->  master/master.csv
+inbox/<account folder>/*.csv  ->  main.py  ->  master/master.csv
 
-1. For each card folder, for each CSV: preview the header, check the required columns exist.
+1. For each account folder (the `ACCOUNTS` table in `main.py`), for each CSV: preview the text to find the
+   real header line (some banks put summary lines above it) and check the required columns exist.
 2. Read the file and convert it to the common format with that card's formatter.
 3. Leave out payments to the card (wording per card, `PAYMENT_WORDS`).
 4. Compare with the master for rows already held (match by count).
 5. Write the master (temp file, then swap), then delete the export.
 
 ## Common format (master/master.csv)
-Posted Date (YYYY-MM-DD), Payee, Amount (charge positive, refund negative), Credit Card.
+Posted Date (YYYY-MM-DD), Payee, Amount, Account, Account Type. Money leaving the account is positive,
+money coming in is negative, for every account type (D9).
 
 ## Files
 | file | role |
@@ -23,7 +25,7 @@ Posted Date (YYYY-MM-DD), Payee, Amount (charge positive, refund negative), Cred
 | `master/master.csv` | the merged record; gitignored |
 
 ## Not built yet
-Checking and savings accounts, categories, rewards maths, charts. See BUILD-STAGES.md.
+Categories, rewards maths, charts, transfer detection. See BUILD-STAGES.md.
 
 ## Reference material (`reference/`, gitignored)
 | file | what it is |
@@ -35,6 +37,6 @@ Checking and savings accounts, categories, rewards maths, charts. See BUILD-STAG
 | Google Sheet `Expense Tracker` | the spreadsheet this replaces (tabs in ACTION-ITEMS #17) |
 
 ## Inbox folders
-Credit cards (read by `main.py`): one folder per card in `inbox/`.
-Accounts (not read yet, ACTION-ITEMS #5, #6): `inbox/Ally/{DA Personal Savings, Joint Checking, Joint Savings}`,
-`inbox/BoA/{Checking, Savings}`, `inbox/Chase/{Checking, Savings}`. Everything inside `inbox/*/*` is gitignored.
+All accounts are read by `main.py`. Cards: `inbox/<card name>/`. Accounts: `inbox/Ally/{DA Personal Savings,
+Joint Checking, Joint Savings}`, `inbox/BoA/{Checking, Savings}`, `inbox/Chase/{Checking, Savings}`. A CSV in
+any other folder is reported and left alone. Everything inside `inbox/*/*` is gitignored.

@@ -1,15 +1,16 @@
-"""Personal finance tracker: bank export CSVs -> one master CSV.
+"""Personal finance tracker: bank and credit-card export CSVs -> one master CSV.
 
 How it works:
-  1. Drop a card's exported CSV into  inbox/<card name>/
+  1. Drop an account's exported CSV into its folder under  inbox/  (folders are listed in ACCOUNTS below)
   2. Run  python main.py
   3. Each export is converted to the common format, compared with what the master
-     already holds for that card, and only the rows the master does not have yet are added.
+     already holds for that account, and only the rows the master does not have yet are added.
   4. Once the master file has been written, the export is deleted.
      If anything goes wrong the export is left where it is.
 
-The common format has four columns: Posted Date (YYYY-MM-DD), Payee, Amount, Credit Card.
-A charge is a positive Amount, a refund is negative.
+The common format has five columns: Posted Date (YYYY-MM-DD), Payee, Amount, Account, Account Type.
+Amount: money LEAVING the account is positive (a charge, a withdrawal), money coming IN is negative
+(a refund, a deposit, a payment to a card). The same rule for every account type.
 """
 import os
 import pandas as pd
@@ -23,27 +24,33 @@ BASE_PATH = Path(__file__).parent
 INBOX_PATH = BASE_PATH / 'inbox'
 MASTER_PATH = BASE_PATH / 'master' / 'master.csv'
 
-# The four columns of the master file, in this order.
-MASTER_COLUMNS = ['Posted Date', 'Payee', 'Amount', 'Credit Card']
+# The columns of the master file, in this order.
+MASTER_COLUMNS = ['Posted Date', 'Payee', 'Amount', 'Account', 'Account Type']
 
-# A row is "the same row" when all four of these match.
-DUPLICATE_KEY = ['Posted Date', 'Payee', 'Amount', 'Credit Card']
+# A row is "the same row" when all of these match.
+DUPLICATE_KEY = ['Posted Date', 'Payee', 'Amount', 'Account']
 
-# The inbox folder name for each card. Each folder name is also the value written to the
-# 'Credit Card' column. Add a new card by adding a name here, a formatter below, and a line in
-# FORMATTERS.
-CREDIT_CARD_NAMES = [
-    'AMEX Delta',
-    'BoA Customized Cash Rewards',
-    'BoA Premium Rewards',
-    'CO Savor One',
-    'Discover',
-    'Chase Sapphire Preferred',
-    'Chase Amazon Prime',
+# Every account the script knows about:
+#   (account name written to the master, folder inside inbox/, account type, export format)
+# The format names are the keys of FORMATS below. Add a new account by adding a line here.
+ACCOUNTS = [
+    ('AMEX Delta',                  'AMEX Delta',                  'Credit Card', 'AMEX'),
+    ('BoA Customized Cash Rewards', 'BoA Customized Cash Rewards', 'Credit Card', 'BoA Card'),
+    ('BoA Premium Rewards',         'BoA Premium Rewards',         'Credit Card', 'BoA Card'),
+    ('CO Savor One',                'CO Savor One',                'Credit Card', 'Capital One'),
+    ('Discover',                    'Discover',                    'Credit Card', 'Discover'),
+    ('Chase Sapphire Preferred',    'Chase Sapphire Preferred',    'Credit Card', 'Chase Card'),
+    ('Chase Amazon Prime',          'Chase Amazon Prime',          'Credit Card', 'Chase Card'),
+    ('Ally DA Personal Savings',    'Ally/DA Personal Savings',    'Savings',     'Ally'),
+    ('Ally Joint Checking',         'Ally/Joint Checking',         'Checking',    'Ally'),
+    ('Ally Joint Savings',          'Ally/Joint Savings',          'Savings',     'Ally'),
+    ('BoA Checking',                'BoA/Checking',                'Checking',    'BoA Bank'),
+    ('BoA Savings',                 'BoA/Savings',                 'Savings',     'BoA Bank'),
+    ('Chase Checking',              'Chase/Checking',              'Checking',    'Chase Bank'),
+    ('Chase Savings',               'Chase/Savings',               'Savings',     'Chase Bank'),
 ]
 
-
-# Payments to the card are not spending, so they are left out. A row is a payment when its Payee
+# Payments to a card are not spending, so they are left out. A row is a payment when its Payee
 # contains one of these words. Only cards whose payment wording has been checked against real data
 # are listed; the others still load their payments (ACTION-ITEMS #1).
 PAYMENT_WORDS = {
@@ -57,31 +64,13 @@ PAYMENT_WORDS = {
 # ---------------------------------------------------------------------------
 # Formatters. Each one takes the raw export (as pandas read it) and returns a table with exactly
 # Posted Date, Payee, Amount. They pick columns by NAME, not position, so a bank adding a column
-# does not silently shift everything. If a column is missing, the check in
-# check_columns() stops the file before anything is written.
+# does not silently shift everything.
 # ---------------------------------------------------------------------------
-
-# The columns each issuer's export must contain. Checked on a preview of the file's header.
-REQUIRED_COLUMNS = {
-    # BoA: Posted Date, Reference Number, Payee, Address, Amount  (charges are negative)
-    'BoA': ['Posted Date', 'Payee', 'Amount'],
-    # Capital One: Transaction Date, Posted Date, Card No., Description, Category, Debit, Credit
-    'CO': ['Posted Date', 'Description', 'Debit', 'Credit'],
-    # Chase: Transaction Date, Post Date, Description, Category, Type, Amount, Memo (charges are negative)
-    'Chase': ['Post Date', 'Description', 'Amount'],
-    # UNVERIFIED: the old script never converted AMEX or Discover, so these column names are the
-    # banks' usual ones, not checked against a real file. If a real export differs, the file is
-    # left in the inbox with a message saying which columns it found.
-    'AMEX': ['Date', 'Description', 'Amount'],
-    'Discover': ['Post Date', 'Description', 'Amount'],
-}
-
-
-def format_boa(raw):
+def format_boa_card(raw):
     out = pd.DataFrame()
     out['Posted Date'] = raw['Posted Date']
     out['Payee'] = raw['Payee']
-    # BoA shows a charge as negative; the master wants a charge as positive.
+    # BoA shows a charge as negative; the master wants money leaving as positive.
     out['Amount'] = raw['Amount'] * -1
     return out
 
@@ -96,11 +85,11 @@ def format_capital_one(raw):
     return out
 
 
-def format_chase(raw):
+def format_chase_card(raw):
     out = pd.DataFrame()
     out['Posted Date'] = raw['Post Date']
     out['Payee'] = raw['Description']
-    # Chase shows a charge as negative; the master wants a charge as positive.
+    # Chase shows a charge as negative; the master wants it positive.
     out['Amount'] = raw['Amount'] * -1
     return out
 
@@ -123,43 +112,95 @@ def format_discover(raw):
     return out
 
 
-# For each card: which column check to run and which formatter to use.
-FORMATTERS = {
-    'AMEX Delta': ('AMEX', format_amex),
-    'BoA Customized Cash Rewards': ('BoA', format_boa),
-    'BoA Premium Rewards': ('BoA', format_boa),
-    'CO Savor One': ('CO', format_capital_one),
-    'Discover': ('Discover', format_discover),
-    'Chase Sapphire Preferred': ('Chase', format_chase),
-    'Chase Amazon Prime': ('Chase', format_chase),
+def format_ally(raw):
+    out = pd.DataFrame()
+    out['Posted Date'] = raw['Date']
+    out['Payee'] = raw['Description']
+    # Ally shows a withdrawal as negative and a deposit as positive; the master wants the opposite.
+    # The export's own 'Time' and 'Type' columns are not needed: the sign already says which it is.
+    out['Amount'] = raw['Amount'] * -1
+    return out
+
+
+def format_boa_bank(raw):
+    # The export lists a 'Beginning balance' line with no amount. It is not a transaction.
+    raw = raw.dropna(subset=['Amount'])
+    out = pd.DataFrame()
+    out['Posted Date'] = raw['Date']
+    out['Payee'] = raw['Description']
+    # BoA shows money out as negative; the master wants it positive.
+    out['Amount'] = raw['Amount'] * -1
+    return out
+
+
+def format_chase_bank(raw):
+    out = pd.DataFrame()
+    out['Posted Date'] = raw['Posting Date']
+    out['Payee'] = raw['Description']
+    # Chase shows money out as negative; the master wants it positive.
+    out['Amount'] = raw['Amount'] * -1
+    return out
+
+
+# For each export format: the columns it must contain, and the formatter. The required columns are
+# also how the real header line is found, because some exports have summary lines above it.
+FORMATS = {
+    # BoA card: Posted Date, Reference Number, Payee, Address, Amount
+    'BoA Card': (['Posted Date', 'Payee', 'Amount'], format_boa_card),
+    # Capital One: Transaction Date, Posted Date, Card No., Description, Category, Debit, Credit
+    'Capital One': (['Posted Date', 'Description', 'Debit', 'Credit'], format_capital_one),
+    # Chase card: Transaction Date, Post Date, Description, Category, Type, Amount, Memo
+    'Chase Card': (['Post Date', 'Description', 'Amount'], format_chase_card),
+    # Ally (checking and savings): Date, Time, Amount, Type, Description
+    'Ally': (['Date', 'Amount', 'Description'], format_ally),
+    # BoA checking/savings: summary lines, a blank line, then Date, Description, Amount, Running Bal.
+    'BoA Bank': (['Date', 'Description', 'Amount'], format_boa_bank),
+    # UNVERIFIED: no real export of these yet. Column names are from the 2023 script (checking) or
+    # the banks' usual ones. If a real export differs, the file is left in the inbox with a message
+    # saying which columns it found.
+    'AMEX': (['Date', 'Description', 'Amount'], format_amex),
+    'Discover': (['Post Date', 'Description', 'Amount'], format_discover),
+    # Chase checking/savings: Details, Posting Date, Description, Amount, Type, Balance, Check or Slip #
+    'Chase Bank': (['Posting Date', 'Description', 'Amount'], format_chase_bank),
 }
 
 
 # ---------------------------------------------------------------------------
 # Reading one export
 # ---------------------------------------------------------------------------
-def check_columns(csv_path, card_name):
-    """Preview only the header row. Raises ValueError if a required column is missing."""
-    issuer, _ = FORMATTERS[card_name]
-    header = pd.read_csv(csv_path, nrows=0)
-    missing = [c for c in REQUIRED_COLUMNS[issuer] if c not in header.columns]
-    if missing:
-        raise ValueError(f"missing column(s) {missing}; the file has {list(header.columns)}")
+def find_header_line(csv_path, required_columns):
+    """Preview the file (text only) and return the line number of the real header.
+
+    The real header is the first line that holds every required column name. Some banks put
+    summary lines above it. Raises ValueError, naming the first line, if no line qualifies.
+    """
+    with open(csv_path, encoding='utf-8-sig') as file:
+        lines = file.read().splitlines()
+    for line_number, line in enumerate(lines):
+        names = [name.strip().strip('"') for name in line.split(',')]
+        if all(column in names for column in required_columns):
+            return line_number
+    first_line = lines[0] if lines else '(empty file)'
+    raise ValueError(f"no header line with columns {required_columns}; the file starts with: {first_line[:100]}")
 
 
-def read_export(csv_path, card_name):
+def read_export(csv_path, account_name):
     """Read one export. Returns (rows in the common format, number of payment rows left out)."""
-    check_columns(csv_path, card_name)
-    _, formatter = FORMATTERS[card_name]
-    raw = pd.read_csv(csv_path)
+    _, _, account_type, format_name = next(a for a in ACCOUNTS if a[0] == account_name)
+    required_columns, formatter = FORMATS[format_name]
+
+    header_line = find_header_line(csv_path, required_columns)
+    # skipinitialspace: Ally pads some column names with a space. thousands: BoA writes "20,000.00".
+    raw = pd.read_csv(csv_path, skiprows=header_line, skipinitialspace=True, thousands=',')
     rows = formatter(raw)
 
-    # Dates to Year-Month-Day, so every card sorts and compares the same way.
+    # Dates to Year-Month-Day, so every account sorts and compares the same way.
     rows['Posted Date'] = pd.to_datetime(rows['Posted Date']).dt.strftime('%Y-%m-%d')
     # Two decimals, so 12.5 and 12.50 count as the same amount when comparing rows.
     rows['Amount'] = rows['Amount'].astype(float).round(2)
     rows['Payee'] = rows['Payee'].astype(str).str.strip()
-    rows['Credit Card'] = card_name
+    rows['Account'] = account_name
+    rows['Account Type'] = account_type
 
     # A blank date or amount means the export was cut off or malformed; stop rather than guess.
     if rows['Posted Date'].isna().any() or rows['Amount'].isna().any():
@@ -167,7 +208,7 @@ def read_export(csv_path, card_name):
 
     # Leave out payments to the card, and count them so the result line can report it.
     is_payment = pd.Series(False, index=rows.index)
-    for word in PAYMENT_WORDS.get(card_name, []):
+    for word in PAYMENT_WORDS.get(account_name, []):
         is_payment = is_payment | rows['Payee'].str.contains(word, case=False, regex=False)
     return rows[~is_payment][MASTER_COLUMNS].reset_index(drop=True), int(is_payment.sum())
 
@@ -208,7 +249,7 @@ def find_new_rows(export_rows, master):
 def write_master(master):
     """Write the master to a temp file, then swap it in, so a crash cannot leave half a master."""
     MASTER_PATH.parent.mkdir(exist_ok=True)
-    master = master.sort_values(by=['Posted Date', 'Credit Card'], kind='stable')
+    master = master.sort_values(by=['Posted Date', 'Account'], kind='stable')
     temp_path = MASTER_PATH.with_name('master.csv.tmp')
     master.to_csv(temp_path, index=False)
     os.replace(temp_path, MASTER_PATH)
@@ -218,15 +259,15 @@ def write_master(master):
 # The run
 # ---------------------------------------------------------------------------
 def process_inbox():
-    """Go through every card folder in the inbox. Returns a list of plain-English result lines."""
+    """Go through every account folder in the inbox. Returns a list of plain-English result lines."""
     results = []
-    for card_name in CREDIT_CARD_NAMES:
-        card_folder = INBOX_PATH / card_name
-        card_folder.mkdir(parents=True, exist_ok=True)
+    for account_name, folder_name, _, _ in ACCOUNTS:
+        folder = INBOX_PATH / folder_name
+        folder.mkdir(parents=True, exist_ok=True)
 
-        for csv_path in sorted(card_folder.glob('*.csv')):
+        for csv_path in sorted(folder.glob('*.csv')):
             try:
-                export_rows, payments_skipped = read_export(csv_path, card_name)
+                export_rows, payments_skipped = read_export(csv_path, account_name)
                 master = read_master()
                 new_rows = find_new_rows(export_rows, master)
 
@@ -235,22 +276,25 @@ def process_inbox():
 
                 # Reached only after the master was written (or nothing needed writing).
                 csv_path.unlink()
-                results.append(f"{card_name} / {csv_path.name}: {len(new_rows)} new rows added, "
+                results.append(f"{account_name} / {csv_path.name}: {len(new_rows)} new rows added, "
                                f"{len(export_rows) - len(new_rows)} already in master, "
                                f"{payments_skipped} payments left out. Export deleted.")
             except Exception as error:
                 # Leave the file where it is so nothing is lost, and say why.
-                results.append(f"{card_name} / {csv_path.name}: NOT LOADED, file kept. {error}")
+                results.append(f"{account_name} / {csv_path.name}: NOT LOADED, file kept. {error}")
 
-    # A CSV dropped in the wrong place would otherwise sit there unnoticed.
-    for stray in INBOX_PATH.glob('*.csv'):
-        results.append(f"{stray.name}: NOT LOADED. Put it in a card folder inside inbox/.")
+    # A CSV in a folder that belongs to no account (the inbox root, or a bank folder such as
+    # inbox/Ally/) would otherwise sit there unnoticed.
+    known_folders = [INBOX_PATH / folder_name for _, folder_name, _, _ in ACCOUNTS]
+    for stray in sorted(INBOX_PATH.rglob('*.csv')):
+        if stray.parent not in known_folders:
+            results.append(f"{stray.relative_to(INBOX_PATH)}: NOT LOADED. Put it in an account folder inside inbox/.")
     return results
 
 
 if __name__ == '__main__':
     lines = process_inbox()
     if not lines:
-        print("Inbox is empty. Drop exports into inbox/<card name>/ and run again.")
+        print("Inbox is empty. Drop exports into their account folder inside inbox/ and run again.")
     for line in lines:
         print(line)

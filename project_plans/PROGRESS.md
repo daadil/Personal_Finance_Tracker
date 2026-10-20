@@ -27,3 +27,14 @@ Append-only, newest at the end.
   Capital One 2 more, all parse. BoA payments were loading as spending, so BoA payment wording was added to
   `PAYMENT_WORDS` (tests still pass). This confirms the BoA column names on real data.
 - Not done: loading the BoA and older Capital One files for real.
+
+## 2026-10-19 (evening)
+- Loaded for real: 2 more Capital One files, 37 BoA card files. Master 1,261 rows, no blanks. Both reruns report an empty inbox.
+- Rebuilt `main.py` around one `ACCOUNTS` table: checking and savings are now read. Header line is found by
+  required column names (BoA bank exports have summary lines on top); thousands commas and Ally's padded
+  names handled. Master columns changed to Account + Account Type (D9), existing rows migrated, backup kept.
+- Loaded Ally Joint Checking (153), Ally DA Personal Savings (41), Ally Joint Savings (5), BoA Savings (36).
+  Master 1,496 rows, 2021-09-15 to 2026-10-19. 9 tests pass.
+- Decisions from David: diagram in draw.io; categories first (D10).
+- Not done: `master` branch on GitHub still exists (needs the GitHub website; no `gh` on this Mac).
+  Chase / BoA Checking / AMEX / Discover formats still unverified. Transfers between own accounts not labelled (#14).
