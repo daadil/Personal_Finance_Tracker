@@ -38,3 +38,11 @@ Append-only, newest at the end.
 - Decisions from David: diagram in draw.io; categories first (D10).
 - Not done: `master` branch on GitHub still exists (needs the GitHub website; no `gh` on this Mac).
   Chase / BoA Checking / AMEX / Discover formats still unverified. Transfers between own accounts not labelled (#14).
+
+## 2026-10-19 (night)
+- Gate passed: David checked a month against a statement. Stage 0 closed with 7 of 14 accounts (David's call:
+  the others are out of date, he will find the data later).
+- Measured how much of the master the old category sources cover (`measure_categories.py`, read-only):
+  79% of money-out rows but 22% of dollars; 70% of dollars are transfers (D11). So transfers first.
+- David chose: old 38-name list, proposal-and-approve review file for new payees (D12).
+- Wrote the Stage 1 spec in BUILD-STAGES with 1.1 in full. Nothing built yet.

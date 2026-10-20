@@ -52,3 +52,21 @@ transfer shows up twice (out of one account, into another) until ACTION-ITEMS #1
 ## D10. Order of work after Stage 0 (2026-10-19, David)
 Categories first (ACTION-ITEMS #18), because budgets, roll-ups and subscriptions all need them. Diagram tool:
 draw.io (#15).
+
+## D11. Transfers come before categories (2026-10-19, measured)
+`measure_categories.py` on the 1,496-row master: of $360k money-out, about $252k (70%) is transfer-like
+(moves between his own accounts, brokerage, CD). Checking is 97% transfers by dollars and Savings is 100%.
+On credit cards alone (no transfers) the old Mapping.xlsx and keyword lists cover 82% of rows and 71% of
+dollars. Overall, before separating transfers, they cover 79% of rows but only 22% of dollars: the number that
+looked fine was the wrong one. The two old sources also disagree on 72 of the 740 rows where both match.
+Rejected: categorising first (every total would be dominated by transfers).
+
+## D12. Category list and new payees (2026-10-19, David)
+Use the old 38-name list from config.py (it matches the Expense Tracker sheet's monthly tabs). Payees the old
+mapping does not know are proposed by Claude into a gitignored review CSV that David edits; his answers
+become rules. Rejected: asking in the terminal each run (200+ distinct payees now) and leaving them blank.
+
+## D13. Derived data goes in a separate file; the master stays raw (2026-10-19)
+Kind and Category are written to `master/categorised.csv`, rebuilt from the master and the rules. Rejected:
+adding category columns to `master.csv`, because the loader's duplicate check and the deleted exports make
+the master the only copy of the raw data, and a rules mistake would then be permanent.
