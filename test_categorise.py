@@ -148,6 +148,22 @@ def test_apply_review_makes_one_rule_for_many_variants_and_rejects_one_term_two_
     assert categorise.rules_from_review(clash, RULES, category_list)[1] == ["the term 'a shop' was given two different categories"]
 
 
+def test_a_rule_can_depend_on_the_account_type():
+    # "Interest Paid" is income in checking or savings, and a cost on a credit card.
+    rules = pd.DataFrame([
+        ('interest paid', 'contains', 'Income', 'david', 'Checking|Savings'),
+        ('interest paid', 'contains', 'Credit Card Fees', 'david', 'Credit Card'),
+        ('safeway', 'contains', 'Groceries', 'mapping', ''),                      # blank: every account
+    ], columns=['Term', 'Match', 'Category', 'Source', 'Account Type'])
+    assert categorise.pick_category('interest paid', rules, {}, 'Savings') == ('Income', 'rule')
+    assert categorise.pick_category('interest paid', rules, {}, 'Credit Card') == ('Credit Card Fees', 'rule')
+    assert categorise.pick_category('safeway 55', rules, {}, 'Credit Card') == ('Groceries', 'rule')
+    master = make_master([('2026-01-01', 'Interest Paid', -1.5, 'Savings B', 'Savings'),
+                          ('2026-01-01', 'Interest Paid', 3.0, 'Card A', 'Credit Card')])
+    result = categorise.assign_categories(master, rules, {}, set())
+    assert list(result['Category']) == ['Income', 'Credit Card Fees']
+
+
 if __name__ == '__main__':
     for name, test in list(globals().items()):
         if name.startswith('test_'):

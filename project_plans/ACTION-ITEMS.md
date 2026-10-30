@@ -67,4 +67,5 @@ Permanently numbered. A resolved item keeps its number and loses its detail.
     rule); "eCheck deposit" is Taxes (applied). STILL OPEN: the bank's own person-to-person transfer from his other
     account into savings is a transfer and is not yet labelled as one; the teller cash deposits are categorised
     Income as he chose. Extend `TRANSFER_WORDS` for the first, then rerun `--transfers-only`.
-23. David to confirm: the 37 "Interest Paid" rows are interest earned (Income), not Credit Card Fees (D20). Held.
+23. RESOLVED 2026-10-29 (David): "Interest Paid" depends on the account: money in on checking or savings is Income,
+    on a credit card it is a cost (Credit Card Fees). Done with an account-type rule (D21).

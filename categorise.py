@@ -150,8 +150,8 @@ def rules_outside_list(rules, category_list):
     return sorted(set(rules['Category']) - set(category_list['Category']))
 
 
-def pick_category(payee, rules, chosen):
-    """Return (category, how) for one payee (lowercase, stripped).
+def pick_category(payee, rules, chosen, account_type=None):
+    """Return (category, how) for one payee, in one type of account.
 
     Order: David's answer for this exact payee in conflicts.csv; else the one category the rules give; else,
     if rules disagree, the category of the longest matching term; else nothing.
@@ -159,7 +159,7 @@ def pick_category(payee, rules, chosen):
     payee = squeeze(payee)
     if payee in chosen:
         return chosen[payee], 'david'
-    hits = matching_rules(rules, payee)
+    hits = matching_rules(rules, payee, account_type)
     if not hits:
         return '', 'none'
     if len({h['Category'] for h in hits}) == 1:
@@ -179,10 +179,11 @@ def assign_categories(master, rules, chosen, transfer_indexes):
     result.loc[result.index.isin(transfer_indexes), 'Kind'] = 'transfer'
 
     # Work out each distinct payee once; the same payee text repeats many times.
-    lowered = result['Payee'].map(squeeze)
-    answers = {payee: pick_category(payee, rules, chosen) for payee in lowered.unique()}
-    result['Category'] = [answers[p][0] for p in lowered]
-    result['How'] = [answers[p][1] for p in lowered]
+    # The same payee can mean different things in different account types, so the account type is part of the key.
+    keys = list(zip(result['Payee'].map(squeeze), result['Account Type']))
+    answers = {key: pick_category(key[0], rules, chosen, key[1]) for key in set(keys)}
+    result['Category'] = [answers[key][0] for key in keys]
+    result['How'] = [answers[key][1] for key in keys]
     result.loc[result['Kind'] == 'transfer', ['Category', 'How']] = ['', 'transfer']
     return result
 
@@ -252,8 +253,8 @@ def rules_from_review(review, rules, category_list):
         elif ((rules['Term'] == term) & (rules['Match'] == 'contains') & (rules['Category'] == category)).any():
             continue   # this exact rule already exists
         else:
-            new_rules.append({'Term': term, 'Match': 'contains', 'Category': category, 'Source': 'david'})
-    new_rules = pd.DataFrame(new_rules, columns=['Term', 'Match', 'Category', 'Source'])
+            new_rules.append({'Term': term, 'Match': 'contains', 'Category': category, 'Source': 'david', 'Account Type': ''})
+    new_rules = pd.DataFrame(new_rules, columns=['Term', 'Match', 'Category', 'Source', 'Account Type'])
     # Several payee variants can share one term (one shop, many store numbers): one rule is enough.
     new_rules = new_rules.drop_duplicates(subset=['Term', 'Match', 'Category']).reset_index(drop=True)
     # The same term given two different categories would be a new conflict: stop and say so.
@@ -282,6 +283,8 @@ if __name__ == '__main__':
 
     if '--review-file' in sys.argv or '--apply-review' in sys.argv:
         rules = pd.read_csv(RULES_PATH / 'category_rules.csv')
+        if 'Account Type' not in rules.columns:
+            rules['Account Type'] = ''
         category_list = pd.read_csv(RULES_PATH / 'categories.csv')
         conflicts = pd.read_csv(RULES_PATH / 'conflicts.csv').fillna('')
         conflicts = conflicts[(conflicts['Kind'] == 'payee') & (conflicts['Chosen'] != '')]
@@ -314,6 +317,8 @@ if __name__ == '__main__':
 
     if '--categories-preview' in sys.argv:
         rules = pd.read_csv(RULES_PATH / 'category_rules.csv')
+        if 'Account Type' not in rules.columns:
+            rules['Account Type'] = ''
         category_list = pd.read_csv(RULES_PATH / 'categories.csv')
         outside = rules_outside_list(rules, category_list)
         if outside:

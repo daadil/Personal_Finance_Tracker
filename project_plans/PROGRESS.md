@@ -97,3 +97,6 @@ Append-only, newest at the end.
   now ignores extra spaces (30 tests pass in all).
 - Coverage now: credit-card spending 99.0% of rows (98.3% of dollars); checking and savings spending 100%; money in
   63 of 103 rows. Remaining blanks are unclear payees, a held interest rule, and a netted-out adjustment.
+- David: "Interest Paid" depends on the account (Income on checking/savings, a cost on a card). Added an optional
+  Account Type to rules and two rules (D21); 31 tests pass. Money-in rows with a category: 100 of 103; spending rows
+  without one: 12 (credit card). #23 resolved.

@@ -143,9 +143,19 @@ David filled in 169 of 182 rows. Applied 163 rules with no payee matching two ca
 1. "Subscription" was not in his list; read as the typo it is and applied as "Subscriptions" (said so to him).
 2. His category for the bank's "Interest Paid" lines (Credit Card Fees) was held back, not applied: all 37 rows
    are money coming in on savings and checking, which is interest earned (Income). Card interest he pays is a
-   different payee and already has a rule. Held pending his word; the rows stay uncategorised meanwhile.
+   different payee and already has a rule. Held pending his word (settled in D21).
 3. His "eCheck deposit" is categorised Taxes (he said that is what he sees when paying property tax) although
    the one row is money in. Applied as told.
 Found by running it: two new rules matched 0 rows because the bank writes payees with irregular double spaces.
 Matching now ignores capitals and extra spaces on both sides (test added). Also: four rows (two credits, an
 adjustment, a rebill of the same amount) net to zero, so leaving them uncategorised changes no total.
+
+## D21. A rule may depend on the account type (2026-10-29, David)
+David's rule: "Interest Paid" means different things by account: on checking or savings it is money earned
+(Income); on a credit card it is money spent. Rules gained an optional `Account Type` column (blank = every
+account; several types separated by `|`), and matching now takes the account type of each row. Two rules were
+added: "interest paid" for Checking|Savings is Income, for Credit Card is Credit Card Fees. In the current data
+every "Interest Paid" row is on a savings or checking account (37 rows), so today only the Income rule is used;
+the card rule is for later exports. Rejected: a separate payee wording per bank (David's point is that the same
+words flip meaning, so the account type has to be an input). Cost: one more column in the rules file, and
+`import_rules.find_conflicts` does not yet consider it (it is a one-off and its files are already answered).

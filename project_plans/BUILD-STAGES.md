@@ -87,8 +87,8 @@ Verify (David): after applying, the printed match counts look right (a term that
 payee had is too broad) and the preview's 20 random rows are still all correct.
 Gate: no wrong category in the new preview's 20 random rows; he is happy with what is left uncategorised.
 Result: first batch (his ten answers) 81.9% to 83.2% of credit-card spending rows; second batch (163 rules from the
-review file) to 99.0% of rows and 98.3% of dollars; checking and savings spending 100%. 52 spending rows are still
-uncategorised (unclear payees, plus one held interest rule, D20). Of 103 money-in rows, 63 have a category.
+review file) to 99.0% of rows and 98.3% of dollars; checking and savings spending 100%. 12 spending rows are still
+uncategorised (unclear payees). Of 103 money-in rows, 100 have a category.
 
 ### 1.5 Write `private_data/master/categorised.csv` (Kind, Category added). Tests on made-up data for every rule type.
 

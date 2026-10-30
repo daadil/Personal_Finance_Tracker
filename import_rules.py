@@ -78,11 +78,19 @@ def squeeze(text):
     return ' '.join(str(text).lower().split())
 
 
-def matching_rules(rules, payee):
-    """All rules that match one payee. Spacing and capitals are ignored on both sides."""
+def matching_rules(rules, payee, account_type=None):
+    """All rules that match one payee. Spacing and capitals are ignored on both sides.
+
+    A rule may name the account types it applies to in an 'Account Type' column, separated by '|'
+    (for example 'Checking|Savings'); blank means every account. "Interest Paid" is income in a savings
+    account and a cost on a credit card. With account_type=None the restriction is not checked.
+    """
     payee = squeeze(payee)
     hits = []
     for _, rule in rules.iterrows():
+        only_for = str(rule['Account Type']) if 'Account Type' in rules.columns and pd.notna(rule['Account Type']) else ''
+        if account_type is not None and only_for != '' and account_type not in only_for.split('|'):
+            continue
         term = squeeze(rule['Term'])
         if rule['Match'] == 'contains' and term in payee:
             hits.append(rule)

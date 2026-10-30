@@ -41,6 +41,12 @@ Categories, rewards maths, charts, transfer detection. See BUILD-STAGES.md.
 | `financial_workflow.pdf` | diagram of the 2020 finance set-up (see ACTION-ITEMS #15) |
 | Google Sheet `Expense Tracker` | the spreadsheet this replaces (tabs in ACTION-ITEMS #17) |
 
+## Category rules
+`private_data/rules/category_rules.csv`: Term, Match (contains or exact), Category, Source, and an optional Account Type
+(blank means every account; `Checking|Savings` means those two). Spacing and capitals are ignored when matching.
+Order of choice for a payee: David's answer in `conflicts.csv`, else the single matching category, else the longest
+matching term, else blank (D17, D21).
+
 ## Inbox folders
 All accounts are read by `main.py`. Cards: `private_data/inbox/<card name>/`. Accounts: `private_data/inbox/Ally/{DA Personal Savings,
 Joint Checking, Joint Savings}`, `private_data/inbox/BoA/{Checking, Savings}`, `private_data/inbox/Chase/{Checking, Savings}`. A CSV in
