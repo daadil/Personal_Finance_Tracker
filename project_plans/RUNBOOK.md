@@ -23,10 +23,11 @@ Commands for running the tracker (zsh, MacBook Air).
 1. `~/venvs/finance-tracker/bin/python categorise.py --transfers-only`
 2. Read the three checks it prints; open `private_data/master/transfer_report.csv` for every row it labelled.
 
-## Import the old category rules (Stage 1.2; one-off, writes only private_data/rules/)
+## Import the old category rules (Stage 1.2; one-off, writes only private_data/rules/; refuses to overwrite once you have edited the rules)
 1. `~/venvs/finance-tracker/bin/python import_rules.py`
 2. Open `private_data/rules/unknown_categories.csv`, fill the `Map To` column.
 3. Open `private_data/rules/conflicts.csv`, fill the `Chosen` column (copy `Suggested` if it is right).
+4. To see or edit the list of categories: open `private_data/rules/categories.csv`. After editing rules or the list, refresh the counts: `~/venvs/finance-tracker/bin/python import_rules.py --category-list`
 
 ## GitHub: make `main` the default branch and delete the old `master` (one time)
 1. Open https://github.com/daadil/Personal_Finance_Tracker/settings (the General page; the Branches page no longer has this setting)

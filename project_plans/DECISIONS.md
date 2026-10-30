@@ -114,3 +114,13 @@ Result: 302 rules (198 from the mapping, 32 from config, 72 from both), 23 categ
 outside the list: "Credit Card Payment" (6 rules); these are the same payment wording the loader already drops,
 so they never reach the master. Coverage of credit-card money-out rows with the rules: 81.9% (82.1% measured
 before; the denominators differ slightly), so nothing was lost in the import.
+
+## D18. "Credit Card Payment" is its own category; the category list is a file David owns (2026-10-29, David)
+He answered the 1.2 review files: the unknown category "Credit Card Payment" becomes a category of its own (39
+names now, not 38), and both Safeway-fuel payees are Transportation (longest term won, as suggested). He also
+edited four rules (two Kohl's rules and Quince from Shopping to Clothes; rover.com from Travel to Pet).
+`private_data/rules/categories.csv` is now the list of allowed categories, with rule counts and his notes; he
+edits it, and `import_rules.py --category-list` refreshes the counts without losing his names or notes.
+`import_rules.py` refuses to overwrite `category_rules.csv` (it would wipe his edits) unless `--force` is given.
+Note: payments on cards that are loaded are still dropped at load (D6), so the category has no rows yet; see
+ACTION-ITEMS #21. Rejected: giving payments a Kind instead of a category (he asked for a category).

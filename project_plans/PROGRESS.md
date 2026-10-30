@@ -72,3 +72,6 @@ Append-only, newest at the end.
 - Real run: 302 rules, 23 of 38 categories used, 1 category outside the list, 2 conflicts, 81.9% credit-card row
   coverage (D17). Three corrections to the spec, all from the data (D17).
 - Gate NOT closed: David fills `Map To` (1 row) and `Chosen` (2 rows).
+- David answered the review files and edited four rules (D18). Backed up his rules file; `import_rules.py` now
+  refuses to overwrite it. Added `--category-list` and `private_data/rules/categories.csv` (39 categories, 16 with
+  no rules yet). Gate for 1.2 PASSED. 22 tests pass. Wrote the step 1.3 spec in full.

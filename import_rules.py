@@ -6,7 +6,8 @@ One-off. Reads only private_data/reference/ (the old Mapping.xlsx and config.py)
   unknown_categories.csv  categories the old sources use that are not in David's 38-name list, plus 'Map To'
   conflicts.csv           places where rules disagree, plus 'Chosen'
 
-Run:  python import_rules.py
+Run:  python import_rules.py                  (first time only: refuses to overwrite David's edited rules)
+      python import_rules.py --category-list  (rewrites categories.csv counts from the current rules file)
 """
 import sys
 import pandas as pd
@@ -116,6 +117,26 @@ def find_unknown_categories(rules, allowed_categories):
     return summary
 
 
+def build_category_list(rules, master, allowed_categories, old_notes):
+    """One row per category: how many rules use it, how many master rows match a rule of that category.
+
+    The 'Master rows matching' count can add up to more than the master when a payee matches rules from
+    two categories (a conflict). 'Note' keeps whatever David wrote in the file before.
+    """
+    rows_per_category = {}
+    for payee in master['Payee'].astype(str).str.lower().str.strip():
+        for category in {h['Category'] for h in matching_rules(rules, payee)}:
+            rows_per_category[category] = rows_per_category.get(category, 0) + 1
+    rules_per_category = rules['Category'].value_counts()
+
+    names = list(allowed_categories) + sorted(set(rules['Category']) - set(allowed_categories))
+    table = pd.DataFrame({'Category': names})
+    table['Rules using it'] = table['Category'].map(rules_per_category).fillna(0).astype(int)
+    table['Master rows matching'] = table['Category'].map(rows_per_category).fillna(0).astype(int)
+    table['Note'] = table['Category'].map(old_notes).fillna('')
+    return table
+
+
 def report_short_terms(rules, master):
     """Print what each very short term matches in the master, so false matches can be seen."""
     payees = master['Payee'].astype(str).str.lower().str.strip().drop_duplicates()
@@ -130,6 +151,30 @@ def report_short_terms(rules, master):
 if __name__ == '__main__':
     sys.path.insert(0, str(REFERENCE_PATH))
     import config  # the old 2023 settings, in private_data/reference/
+    RULES_PATH.mkdir(parents=True, exist_ok=True)
+    CATEGORY_LIST_PATH = RULES_PATH / 'categories.csv'
+
+    if '--category-list' in sys.argv:
+        # The category list is David's: if the file exists its names are kept, and he can add or rename rows.
+        rules = pd.read_csv(RULES_PATH / 'category_rules.csv')
+        master = pd.read_csv(MASTER_PATH)
+        if CATEGORY_LIST_PATH.exists():
+            old = pd.read_csv(CATEGORY_LIST_PATH).fillna('')
+            allowed, old_notes = list(old['Category']), dict(zip(old['Category'], old['Note']))
+        else:
+            # First time: his 38 names from the old config, plus the one he added on 2026-10-29.
+            allowed = list(config.transaction_types) + ['Credit Card Payment']
+            old_notes = {'Credit Card Payment': 'Added 2026-10-29 by David. Own category; a card payment is not new spending.'}
+        table = build_category_list(rules, master, allowed, old_notes)
+        table.to_csv(CATEGORY_LIST_PATH, index=False)
+        print(table.to_string(index=False))
+        print(f"\n{len(table)} categories -> {CATEGORY_LIST_PATH}")
+        sys.exit(0)
+
+    if (RULES_PATH / 'category_rules.csv').exists() and '--force' not in sys.argv:
+        print("private_data/rules/category_rules.csv already exists and may hold David's edits. Not overwriting.")
+        print("Use  --category-list  to refresh the category list, or  --force  to start over from the old files.")
+        sys.exit(1)
 
     mapping = pd.read_excel(REFERENCE_PATH / 'Mapping.xlsx', sheet_name='Sheet2')
     config_lists = {name: getattr(config, name) for name in CONFIG_LISTS}
@@ -139,7 +184,6 @@ if __name__ == '__main__':
     unknown = find_unknown_categories(rules, config.transaction_types)
     conflicts = find_conflicts(rules, master)
 
-    RULES_PATH.mkdir(parents=True, exist_ok=True)
     rules.to_csv(RULES_PATH / 'category_rules.csv', index=False)
     unknown.to_csv(RULES_PATH / 'unknown_categories.csv', index=False)
     conflicts.to_csv(RULES_PATH / 'conflicts.csv', index=False)

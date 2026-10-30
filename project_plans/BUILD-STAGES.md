@@ -32,7 +32,7 @@ Verify (David, 15 minutes): open `private_data/master/transfer_report.csv`, (a) 
 "money-out excluding transfers" total is plausible against what he knows he spends.
 Gate: all three checks pass. If one fails, report the failure and the rows; do not move the bar.
 
-### 1.2 Import the old rules (nothing is categorised yet; two review files are written). BUILT 2026-10-29; gate waiting on David filling in the two files
+### 1.2 Import the old rules (nothing is categorised yet; two review files are written). PASSED 2026-10-29 (David filled in both files and reviewed the rules)
 Why: the old mapping and keyword lists are the only categories David has already decided; they are the starting
 rules, and where they disagree a human picks (2 payees, once measured properly: D17).
 1. Build `import_rules.py` (one-off, reads only `private_data/reference/`). Inputs: `private_data/reference/Mapping.xlsx` sheet `Sheet2`
@@ -53,8 +53,25 @@ Gate: both files fully filled in (`Map To`, `Chosen`), and coverage still about 
 import lost nothing (measured 81.9%, D17). Precedence among rules (longest term
 wins) is an assumption, tested against the filled-in conflicts in 1.3, not fixed here.
 
-### 1.3 to 1.5 (decision level; detailed when 1.2's gate passes)
-- 1.3 Apply the rules (David's `Chosen` answers win) as a dry run; test longest-term-wins against his answers; print coverage by rows and dollars per account type.
+### 1.3 Apply the rules (dry run; `master.csv` is not touched)
+Why dry run: this is the first time a label is attached to every row; mistakes should cost one afternoon, not the master.
+1. Add `python categorise.py --categories-preview` to `categorise.py`. It reads the master, the transfer report
+   logic from 1.1, `private_data/rules/category_rules.csv`, `conflicts.csv` and `categories.csv`.
+2. Stops with a list if any rule uses a category that is not in `categories.csv` (the list is David's).
+3. Gives each master row a Kind (`transfer`, `spending` for money out, `money in` for money in) and a Category:
+   David's `Chosen` answer for that payee if there is one; otherwise the one matching category; otherwise, if
+   rules disagree, the category of the longest matching term; otherwise blank.
+4. Writes `private_data/test_output/categorised_preview.csv` (row-level, local). Prints: for each account type,
+   the share of money-out rows and of money-out dollars (transfers excluded) that got a category; how often the
+   longest-term pick agreed with David's two answers; 20 random categorised rows; the 10 largest uncategorised
+   payees.
+Run: `~/venvs/finance-tracker/bin/python categorise.py --categories-preview`
+Verify (David, 10 minutes): (a) in the 20 random rows, every category is right; (b) the 10 largest uncategorised
+payees are ones he expects to be unknown; (c) the longest-term pick matched his answers.
+Gate: no wrong category in (a), and (b) and (c) reviewed. Coverage has no target number: it is reported, and he
+judges it (CLAUDE.md: a number is measured, not argued).
+
+### 1.4 to 1.5 (decision level; detailed when 1.3's gate passes)
 - 1.4 Write `private_data/review/uncategorised.csv` (gitignored): unknown payees by dollars, each with a suggested category.
   David edits it in a spreadsheet; the next run reads his answers as rules.
 - 1.5 Write `private_data/master/categorised.csv` (Kind, Category added). Tests on made-up data for every rule type.

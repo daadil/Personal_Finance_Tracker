@@ -58,6 +58,18 @@ def test_exact_rule_matches_only_the_whole_payee():
     assert len(ir.matching_rules(rules, 'payment - thank you very much')) == 0
 
 
+def test_category_list_counts_rules_and_matching_rows_and_keeps_notes():
+    rules = make_rules()
+    master = pd.DataFrame({'Payee': ['SAFEWAY FUEL 12 SEATTLE', 'TRADER JOES 5', 'TRADER JOES 9']})
+    table = ir.build_category_list(rules, master, ['Groceries', 'Transportation', 'Gym', 'Tithe'],
+                                   {'Tithe': 'his own note'})
+    row = {r['Category']: r for _, r in table.iterrows()}
+    assert row['Transportation']['Master rows matching'] == 1
+    assert row['Groceries']['Master rows matching'] == 3        # the Safeway Fuel payee also matches 'safeway'
+    assert row['Tithe']['Rules using it'] == 0 and row['Tithe']['Note'] == 'his own note'
+    assert 'Credit Card Payment' in set(table['Category'])      # used by a rule, so added to the list
+
+
 if __name__ == '__main__':
     for name, test in list(globals().items()):
         if name.startswith('test_'):
