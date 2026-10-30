@@ -113,6 +113,41 @@ def test_rules_outside_the_category_list_are_reported():
     assert categorise.rules_outside_list(RULES, category_list) == ['Credit Card Payment']
 
 
+def test_review_table_lists_uncategorised_payees_biggest_first_and_skips_transfers():
+    master = make_master([
+        ('2026-01-10', 'SAFEWAY 55', 40.0, 'Card A', 'Credit Card'),                      # categorised
+        ('2026-01-11', 'MYSTERY SHOP ONE 12', 10.0, 'Card A', 'Credit Card'),
+        ('2026-01-12', 'BIG UNKNOWN PLACE', 500.0, 'Card A', 'Credit Card'),
+        ('2026-01-13', 'Internet transfer to Savings', 900.0, 'Checking A', 'Checking'),   # a transfer: not listed
+    ])
+    result = categorise.assign_categories(master, RULES, {}, {3})
+    table = categorise.build_review_table(result)
+    assert list(table['Payee']) == ['BIG UNKNOWN PLACE', 'MYSTERY SHOP ONE 12']
+    assert table.iloc[1]['Term'] == 'mystery shop'
+
+
+def test_apply_review_makes_rules_only_from_answered_rows_and_checks_the_category_list():
+    category_list = pd.DataFrame({'Category': ['Groceries', 'Taxes']})
+    review = pd.DataFrame({'Payee': ['A SHOP', 'B SHOP', 'C SHOP'], 'Term': ['a shop', 'b shop', ''],
+                           'Your Category': ['Taxes', '', 'Taxes']})
+    new_rules, problems = categorise.rules_from_review(review, RULES, category_list)
+    assert list(new_rules['Term']) == ['a shop'] and new_rules.iloc[0]['Source'] == 'david'
+    assert problems == ["'C SHOP': the Term is blank"]
+    bad = pd.DataFrame({'Payee': ['D SHOP'], 'Term': ['d shop'], 'Your Category': ['Nonsense']})
+    assert 'not in categories.csv' in categorise.rules_from_review(bad, RULES, category_list)[1][0]
+
+
+def test_apply_review_makes_one_rule_for_many_variants_and_rejects_one_term_two_categories():
+    category_list = pd.DataFrame({'Category': ['Groceries', 'Taxes', 'Water']})
+    same = pd.DataFrame({'Payee': ['A SHOP 1', 'A SHOP 2', 'A SHOP 3'], 'Term': ['a shop'] * 3,
+                         'Your Category': ['Water'] * 3})
+    new_rules, problems = categorise.rules_from_review(same, RULES, category_list)
+    assert len(new_rules) == 1 and problems == []
+    clash = pd.DataFrame({'Payee': ['A SHOP 1', 'A SHOP 2'], 'Term': ['a shop'] * 2,
+                          'Your Category': ['Water', 'Taxes']})
+    assert categorise.rules_from_review(clash, RULES, category_list)[1] == ["the term 'a shop' was given two different categories"]
+
+
 if __name__ == '__main__':
     for name, test in list(globals().items()):
         if name.startswith('test_'):

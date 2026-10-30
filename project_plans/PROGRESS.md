@@ -85,3 +85,10 @@ Append-only, newest at the end.
   answers 2 of 2. One row was decided by longest term outside his conflicts file: his edit moved `*quince` to
   Clothes but plain `quince` is still Shopping.
 - Gate NOT closed: David's three checks.
+- Gate 1.3 PASSED: David's check (a) good; he categorised the ten largest gaps, adding a new category, Taxes (40 now).
+- Built step 1.4: `--review-file` and `--apply-review` with tests (14 in test_categorise; 29 in all). First real apply wrote
+  22 identical-looking rules for 10 distinct terms: a defect, fixed with a test; rules file restored and reapplied (10 new
+  rules). Coverage after: credit-card spending rows 83.2% (70.2% of dollars before, 82.3% now); checking spending 100%.
+- Regenerated the review file for what is left: 182 payees, 284 rows; wrote suggested categories for 146; 36 left blank
+  because they are unclear (transfers, adjustments, unknown merchants). Nothing applied.
+- New open item #22: transfer wording the step 1.1 list missed.

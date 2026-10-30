@@ -33,6 +33,13 @@ Commands for running the tracker (zsh, MacBook Air).
 1. `~/venvs/finance-tracker/bin/python categorise.py --categories-preview`
 2. Read the three checks it prints; open `private_data/test_output/categorised_preview.csv` for every row.
 
+## Teach the rules new payees (Stage 1.4)
+1. `~/venvs/finance-tracker/bin/python categorise.py --review-file`   (makes `private_data/review/uncategorised.csv`)
+2. Open it. Fill `Your Category` (copy `Suggested` where it is right). Shorten `Term` where the first two words are too specific.
+3. `~/venvs/finance-tracker/bin/python categorise.py --apply-review`   (read the match counts it prints)
+4. `~/venvs/finance-tracker/bin/python categorise.py --categories-preview`   (see coverage)
+To undo an apply: copy `private_data/rules/category_rules.csv.bak` over `category_rules.csv`.
+
 ## GitHub: make `main` the default branch and delete the old `master` (one time)
 1. Open https://github.com/daadil/Personal_Finance_Tracker/settings (the General page; the Branches page no longer has this setting)
 2. Scroll to "Default branch": click the switch icon, choose `main`, click Update, confirm.

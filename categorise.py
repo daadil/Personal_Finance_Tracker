@@ -8,6 +8,11 @@ Step 1.3: apply the category rules as a dry run.
   python categorise.py --categories-preview
 writes private_data/test_output/categorised_preview.csv and prints coverage and spot-check rows.
 
+Step 1.4: teach the rules the payees they do not know yet.
+  python categorise.py --review-file     lists every uncategorised payee, biggest first, in private_data/review/uncategorised.csv
+  (David fills the 'Your Category' column; 'Term' is the text to look for and he can shorten it)
+  python categorise.py --apply-review    turns his answers into new rules in private_data/rules/category_rules.csv
+
 A transfer is money that moved between his own accounts. It is neither spending nor income, and it
 makes up most of the dollars in the master, so it has to be found before any category totals mean anything.
 """
@@ -22,6 +27,7 @@ MASTER_PATH = DATA_PATH / 'master' / 'master.csv'
 REPORT_PATH = DATA_PATH / 'master' / 'transfer_report.csv'
 RULES_PATH = DATA_PATH / 'rules'
 PREVIEW_PATH = DATA_PATH / 'test_output' / 'categorised_preview.csv'
+REVIEW_PATH = DATA_PATH / 'review' / 'uncategorised.csv'
 
 # Only checking and savings can be both ends of a transfer. A card has no "other side" in the data:
 # card payments are dropped when loading, and a card refund is not a transfer.
@@ -211,12 +217,99 @@ def print_categories_preview(result, chosen, rules):
         print(f"  ${row['sum']:>9,.2f}  {int(row['size']):3d} rows  {str(payee)[:60]}")
 
 
+# ---------------------------------------------------------------------------
+# Step 1.4: the review loop
+# ---------------------------------------------------------------------------
+def build_review_table(result):
+    """Every payee that got no category (transfers excluded), biggest dollars first, for David to fill in."""
+    todo = result[(result['Kind'] != 'transfer') & (result['Category'] == '')]
+    table = todo.groupby('Payee').agg(Rows=('Amount', 'size'), Dollars=('Amount', lambda a: round(a.abs().sum(), 2)))
+    table = table.sort_values('Dollars', ascending=False).reset_index()
+    # A starting guess for the term: the first two words, lowercase. David can shorten or lengthen it.
+    table['Term'] = [' '.join(payee.lower().split()[:2]) for payee in table['Payee']]
+    table['Suggested'] = ''
+    table['Your Category'] = ''
+    return table[['Payee', 'Rows', 'Dollars', 'Term', 'Suggested', 'Your Category']]
+
+
+def rules_from_review(review, rules, category_list):
+    """Turn the filled-in rows into new rules. Returns (new rules, list of problems).
+
+    A row counts only when 'Your Category' is filled in. A problem (a category not in the list, or a
+    blank term) stops the whole apply, so nothing is half done.
+    """
+    review = review.fillna('')
+    answered = review[review['Your Category'].str.strip() != '']
+    problems = []
+    new_rules = []
+    for _, row in answered.iterrows():
+        category, term = row['Your Category'].strip(), row['Term'].strip().lower()
+        if category not in set(category_list['Category']):
+            problems.append(f"'{row['Payee']}': category '{category}' is not in categories.csv")
+        elif term == '':
+            problems.append(f"'{row['Payee']}': the Term is blank")
+        elif ((rules['Term'] == term) & (rules['Match'] == 'contains') & (rules['Category'] == category)).any():
+            continue   # this exact rule already exists
+        else:
+            new_rules.append({'Term': term, 'Match': 'contains', 'Category': category, 'Source': 'david'})
+    new_rules = pd.DataFrame(new_rules, columns=['Term', 'Match', 'Category', 'Source'])
+    # Several payee variants can share one term (one shop, many store numbers): one rule is enough.
+    new_rules = new_rules.drop_duplicates(subset=['Term', 'Match', 'Category']).reset_index(drop=True)
+    # The same term given two different categories would be a new conflict: stop and say so.
+    for term in new_rules[new_rules['Term'].duplicated(keep=False)]['Term'].unique():
+        problems.append(f"the term '{term}' was given two different categories")
+    return new_rules, problems
+
+
+def report_new_rules(new_rules, all_rules, master):
+    """For each new rule: how many master rows it matches, and whether it now makes any payee ambiguous."""
+    payees = master['Payee'].astype(str).str.lower().str.strip()
+    for _, rule in new_rules.iterrows():
+        matched = [p for p in payees.unique() if rule['Term'] in p]
+        clashes = [p for p in matched if len({h['Category'] for h in matching_rules(all_rules, p)}) > 1]
+        print(f"  '{rule['Term']}' -> {rule['Category']}: matches {int(payees.str.contains(rule['Term'], regex=False).sum())} rows"
+              + (f"  (!) {len(clashes)} payees now match two categories, e.g. {clashes[0][:40]}" if clashes else ''))
+
+
 if __name__ == '__main__':
-    if '--transfers-only' not in sys.argv and '--categories-preview' not in sys.argv:
-        print("Run one of:  python categorise.py --transfers-only   |   python categorise.py --categories-preview")
+    modes = ['--transfers-only', '--categories-preview', '--review-file', '--apply-review']
+    if not any(mode in sys.argv for mode in modes):
+        print("Run one of:  python categorise.py " + "   |   python categorise.py ".join(modes))
         sys.exit(1)
     master = pd.read_csv(MASTER_PATH)
     master['Amount'] = master['Amount'].astype(float).round(2)
+
+    if '--review-file' in sys.argv or '--apply-review' in sys.argv:
+        rules = pd.read_csv(RULES_PATH / 'category_rules.csv')
+        category_list = pd.read_csv(RULES_PATH / 'categories.csv')
+        conflicts = pd.read_csv(RULES_PATH / 'conflicts.csv').fillna('')
+        conflicts = conflicts[(conflicts['Kind'] == 'payee') & (conflicts['Chosen'] != '')]
+        chosen = dict(zip(conflicts['Payee'], conflicts['Chosen']))
+
+        if '--review-file' in sys.argv:
+            if REVIEW_PATH.exists():
+                print(f"{REVIEW_PATH} already exists and may hold answers not yet applied. Run --apply-review first.")
+                sys.exit(1)
+            result = assign_categories(master, rules, chosen, set(label_transfers(master)['_master_index']))
+            table = build_review_table(result)
+            REVIEW_PATH.parent.mkdir(parents=True, exist_ok=True)
+            table.to_csv(REVIEW_PATH, index=False)
+            print(f"{len(table)} uncategorised payees -> {REVIEW_PATH}")
+            sys.exit(0)
+
+        review = pd.read_csv(REVIEW_PATH)
+        new_rules, problems = rules_from_review(review, rules, category_list)
+        if problems:
+            print("Stopped, nothing changed:"); [print("  " + p) for p in problems]
+            sys.exit(1)
+        all_rules = pd.concat([rules, new_rules], ignore_index=True)
+        print(f"{len(new_rules)} new rules:"); report_new_rules(new_rules, all_rules, master)
+        (RULES_PATH / 'category_rules.csv.bak').write_text((RULES_PATH / 'category_rules.csv').read_text())
+        all_rules.to_csv(RULES_PATH / 'category_rules.csv', index=False)
+        # Keep the answered file as a record, so --review-file can make a fresh list of what is left.
+        REVIEW_PATH.rename(REVIEW_PATH.with_name('uncategorised_applied.csv'))
+        print(f"Rules saved (backup: category_rules.csv.bak). Answered file kept as uncategorised_applied.csv.")
+        sys.exit(0)
 
     if '--categories-preview' in sys.argv:
         rules = pd.read_csv(RULES_PATH / 'category_rules.csv')

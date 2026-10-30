@@ -53,7 +53,7 @@ Gate: both files fully filled in (`Map To`, `Chosen`), and coverage still about 
 import lost nothing (measured 81.9%, D17). Precedence among rules (longest term
 wins) is an assumption, tested against the filled-in conflicts in 1.3, not fixed here.
 
-### 1.3 Apply the rules (dry run; `master.csv` is not touched). BUILT 2026-10-29; gate waiting on David's three checks
+### 1.3 Apply the rules (dry run; `master.csv` is not touched). PASSED 2026-10-29 (David: (a) the 20 random rows were right; (b) he gave a category for each of the 10 largest gaps, one of them a new category; (c) agreed)
 Why dry run: this is the first time a label is attached to every row; mistakes should cost one afternoon, not the master.
 1. Add `python categorise.py --categories-preview` to `categorise.py`. It reads the master, the transfer report
    logic from 1.1, `private_data/rules/category_rules.csv`, `conflicts.csv` and `categories.csv`.
@@ -71,10 +71,25 @@ payees are ones he expects to be unknown; (c) the longest-term pick matched his 
 Gate: no wrong category in (a), and (b) and (c) reviewed. Coverage has no target number: it is reported, and he
 judges it (CLAUDE.md: a number is measured, not argued).
 
-### 1.4 to 1.5 (decision level; detailed when 1.3's gate passes)
-- 1.4 Write `private_data/review/uncategorised.csv` (gitignored): unknown payees by dollars, each with a suggested category.
-  David edits it in a spreadsheet; the next run reads his answers as rules.
-- 1.5 Write `private_data/master/categorised.csv` (Kind, Category added). Tests on made-up data for every rule type.
+### 1.4 The review loop (BUILT 2026-10-29; first batch applied, second batch waiting on David)
+Why a file: there are about 180 distinct uncategorised payees; a human decides, the script only records.
+1. `python categorise.py --review-file` writes `private_data/review/uncategorised.csv`: every uncategorised payee
+   (transfers excluded), biggest dollars first, with Rows, Dollars, a `Term` (first two words, to shorten or
+   lengthen), `Suggested` (Claude's proposal, left blank when unsure) and an empty `Your Category`.
+   It refuses to run while an unapplied file exists, so answers are never overwritten.
+2. David fills `Your Category` (copying `Suggested` where right) and edits `Term` where it is too narrow or broad.
+3. `python categorise.py --apply-review` adds one rule per distinct term (source `david`), prints how many master rows
+   each new rule matches and any payee that now matches two categories, backs up the rules file, and keeps the
+   answered file as `uncategorised_applied.csv`. A category not in `categories.csv`, a blank term, or one term
+   given two categories stops everything with nothing changed.
+4. Rerun `--categories-preview` to see coverage move.
+Verify (David): after applying, the printed match counts look right (a term that matches far more rows than the
+payee had is too broad) and the preview's 20 random rows are still all correct.
+Gate: no wrong category in the new preview's 20 random rows; he is happy with what is left uncategorised.
+Result so far: first batch (his ten answers, 22 payee variants) applied as 10 rules; credit-card spending rows with
+a category went from 81.9% to 83.2% (70.2% to 82.3% of dollars); checking spending is now fully categorised.
+
+### 1.5 Write `private_data/master/categorised.csv` (Kind, Category added). Tests on made-up data for every rule type.
 
 ## Stage 2 onward: not yet planned
 Candidates are in ACTION-ITEMS.md (payments and returns, checking, savings, categories, rewards,

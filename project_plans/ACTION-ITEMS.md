@@ -62,3 +62,9 @@ Permanently numbered. A resolved item keeps its number and loses its detail.
     `private_data/review/notes.md` (local only), not here.
 21. RESOLVED 2026-10-29 (David): card payments stay dropped at load. No cross-check from payments; card totals
     come from the card rows. "Credit Card Payment" stays in the category list as a name, with no rows.
+
+22. Transfer wording the step 1.1 list missed (found in the 1.4 review): a large deposit into savings whose payee is
+    the bank's own person-to-person transfer from his other account, bank-teller cash deposits, and "Venmo
+    cashout" / "eCheck deposit" rows. The first is a transfer; the others are unclear (income or transfer).
+    Decide with David and extend `TRANSFER_WORDS`, then rerun `--transfers-only`. Not done: it needs his word on
+    the unclear ones.

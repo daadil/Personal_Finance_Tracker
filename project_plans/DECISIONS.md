@@ -125,3 +125,15 @@ edits it, and `import_rules.py --category-list` refreshes the counts without los
 Payments on cards that are loaded stay dropped at load (D6); David decided not to keep them for a cross-check
 ("let's not overcomplicate", ACTION-ITEMS #21), so the category has no rows. Rejected: keeping payments to
 reconcile card spend, and giving payments a Kind instead of a category.
+
+## D19. How the review loop works (2026-10-29)
+David gave categories for the ten largest gaps; they went in through the same review file the rest will use.
+Choices, all from running it on the real data: (1) `Term` is prefilled with the first two words of the payee and
+the apply step prints how many master rows each new rule matches, so a term that is too broad shows itself;
+(2) one rule per distinct term, because seven variants of one bill had been written as seven identical rules (a
+defect found on the first real apply and fixed, with a test); (3) any problem stops the whole apply, so it is
+never half done; (4) the file is archived, not deleted, after applying. Suggestions are never applied without
+David copying them into `Your Category`: he asked not to overcomplicate, and wrong category rules cost more
+than a copy and paste. Rejected: an accept-all-suggestions switch. "Taxes" was added as a new category at his
+request, separate from Property Tax. Anything he calls a store card payment (a card not loaded) is categorised
+"Credit Card Payment" and still counts as spending (D15).
