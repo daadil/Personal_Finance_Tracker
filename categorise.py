@@ -1,8 +1,12 @@
-"""Stage 1: label transfers (and, in later steps, categories). Reads private_data/master/master.csv, never changes it.
+"""Stage 1: label transfers and categories. Reads private_data/master/master.csv, never changes it.
 
-Step 1.1 (this file so far): find transfers between David's own accounts.
+Step 1.1: find transfers between David's own accounts.
   python categorise.py --transfers-only
 writes private_data/master/transfer_report.csv and prints a summary. Nothing else is written.
+
+Step 1.3: apply the category rules as a dry run.
+  python categorise.py --categories-preview
+writes private_data/test_output/categorised_preview.csv and prints coverage and spot-check rows.
 
 A transfer is money that moved between his own accounts. It is neither spending nor income, and it
 makes up most of the dollars in the master, so it has to be found before any category totals mean anything.
@@ -10,11 +14,14 @@ makes up most of the dollars in the master, so it has to be found before any cat
 import sys
 import pandas as pd
 from pathlib import Path
+from import_rules import matching_rules   # one definition of 'which rules match a payee'
 
 BASE_PATH = Path(__file__).parent
 DATA_PATH = BASE_PATH / 'private_data'   # gitignored as a whole: every file written here stays on this Mac
 MASTER_PATH = DATA_PATH / 'master' / 'master.csv'
 REPORT_PATH = DATA_PATH / 'master' / 'transfer_report.csv'
+RULES_PATH = DATA_PATH / 'rules'
+PREVIEW_PATH = DATA_PATH / 'test_output' / 'categorised_preview.csv'
 
 # Only checking and savings can be both ends of a transfer. A card has no "other side" in the data:
 # card payments are dropped when loading, and a card refund is not a transfer.
@@ -129,12 +136,106 @@ def print_summary(master, report):
         print(f"  ${row['Amount']:>9,.2f}  {row['Posted Date']} {row['Account']:28s} | {str(row['Payee'])[:50]}")
 
 
+# ---------------------------------------------------------------------------
+# Step 1.3: categories
+# ---------------------------------------------------------------------------
+def rules_outside_list(rules, category_list):
+    """Categories that rules use but David's list (categories.csv) does not have."""
+    return sorted(set(rules['Category']) - set(category_list['Category']))
+
+
+def pick_category(payee, rules, chosen):
+    """Return (category, how) for one payee (lowercase, stripped).
+
+    Order: David's answer for this exact payee in conflicts.csv; else the one category the rules give; else,
+    if rules disagree, the category of the longest matching term; else nothing.
+    """
+    if payee in chosen:
+        return chosen[payee], 'david'
+    hits = matching_rules(rules, payee)
+    if not hits:
+        return '', 'none'
+    if len({h['Category'] for h in hits}) == 1:
+        return hits[0]['Category'], 'rule'
+    longest = max(hits, key=lambda h: len(h['Term']))
+    return longest['Category'], 'longest term'
+
+
+def assign_categories(master, rules, chosen, transfer_indexes):
+    """Return the master with Kind, Category and How added. The master itself is not changed.
+
+    Kind: 'transfer' (from step 1.1), 'spending' (money out), 'money in' (a refund, a deposit, cash back).
+    Transfers get no category: they are neither spending nor income.
+    """
+    result = master.copy()
+    result['Kind'] = ['money in' if amount < 0 else 'spending' for amount in result['Amount']]
+    result.loc[result.index.isin(transfer_indexes), 'Kind'] = 'transfer'
+
+    # Work out each distinct payee once; the same payee text repeats many times.
+    lowered = result['Payee'].astype(str).str.lower().str.strip()
+    answers = {payee: pick_category(payee, rules, chosen) for payee in lowered.unique()}
+    result['Category'] = [answers[p][0] for p in lowered]
+    result['How'] = [answers[p][1] for p in lowered]
+    result.loc[result['Kind'] == 'transfer', ['Category', 'How']] = ['', 'transfer']
+    return result
+
+
+def print_categories_preview(result, chosen, rules):
+    """What David checks: coverage, whether longest-term agrees with his answers, 20 random rows, biggest gaps."""
+    spending = result[result['Kind'] == 'spending']
+    print(f"\nRows: {len(result)} | transfers {(result['Kind'] == 'transfer').sum()}, "
+          f"spending {len(spending)}, money in {(result['Kind'] == 'money in').sum()}")
+
+    print("\nSpending rows that got a category (transfers excluded):")
+    for account_type in ['Credit Card', 'Checking', 'Savings']:
+        rows = spending[spending['Account Type'] == account_type]
+        if len(rows) == 0:
+            continue
+        done = rows[rows['Category'] != '']
+        print(f"  {account_type:12s} {len(done):4d} of {len(rows):4d} rows ({len(done) / len(rows):5.1%}), "
+              f"{done['Amount'].sum() / rows['Amount'].sum():5.1%} of dollars")
+    print(f"  How they were decided: {result[result['Kind'] != 'transfer']['How'].value_counts().to_dict()}")
+
+    # Check (c): does 'longest term wins' agree with what David chose?
+    agree = [pick_category(payee, rules, {})[0] == category for payee, category in chosen.items()]
+    print(f"\nCheck (c): longest-term pick agreed with David's answers: {sum(agree)} of {len(agree)}")
+
+    print("\nCheck (a): 20 random categorised rows")
+    done = result[result['Category'] != '']
+    for _, row in done.sample(n=min(20, len(done)), random_state=1).iterrows():
+        print(f"  {row['Kind']:8s} ${row['Amount']:>9,.2f}  {str(row['Payee'])[:38]:38s} -> {row['Category']} ({row['How']})")
+
+    print("\nCheck (b): 10 largest spending payees with NO category")
+    gaps = spending[spending['Category'] == ''].groupby('Payee')['Amount'].agg(['sum', 'size'])
+    for payee, row in gaps.sort_values('sum', ascending=False).head(10).iterrows():
+        print(f"  ${row['sum']:>9,.2f}  {int(row['size']):3d} rows  {str(payee)[:60]}")
+
+
 if __name__ == '__main__':
-    if '--transfers-only' not in sys.argv:
-        print("Only step 1.1 exists so far. Run:  python categorise.py --transfers-only")
+    if '--transfers-only' not in sys.argv and '--categories-preview' not in sys.argv:
+        print("Run one of:  python categorise.py --transfers-only   |   python categorise.py --categories-preview")
         sys.exit(1)
     master = pd.read_csv(MASTER_PATH)
     master['Amount'] = master['Amount'].astype(float).round(2)
+
+    if '--categories-preview' in sys.argv:
+        rules = pd.read_csv(RULES_PATH / 'category_rules.csv')
+        category_list = pd.read_csv(RULES_PATH / 'categories.csv')
+        outside = rules_outside_list(rules, category_list)
+        if outside:
+            print(f"Stopped: rules use categories that are not in categories.csv: {outside}")
+            sys.exit(1)
+        conflicts = pd.read_csv(RULES_PATH / 'conflicts.csv').fillna('')
+        conflicts = conflicts[(conflicts['Kind'] == 'payee') & (conflicts['Chosen'] != '')]
+        chosen = dict(zip(conflicts['Payee'], conflicts['Chosen']))
+
+        transfers = label_transfers(master)
+        result = assign_categories(master, rules, chosen, set(transfers['_master_index']))
+        PREVIEW_PATH.parent.mkdir(parents=True, exist_ok=True)
+        result.to_csv(PREVIEW_PATH, index=False)
+        print_categories_preview(result, chosen, rules)
+        print(f"\nPreview written to {PREVIEW_PATH}  (the master was not changed)")
+        sys.exit(0)
 
     print("Pairs found by date window (days apart):", pair_curve(master))
     print(f"Using TRANSFER_WINDOW_DAYS = {TRANSFER_WINDOW_DAYS}")

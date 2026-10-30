@@ -53,7 +53,7 @@ Gate: both files fully filled in (`Map To`, `Chosen`), and coverage still about 
 import lost nothing (measured 81.9%, D17). Precedence among rules (longest term
 wins) is an assumption, tested against the filled-in conflicts in 1.3, not fixed here.
 
-### 1.3 Apply the rules (dry run; `master.csv` is not touched)
+### 1.3 Apply the rules (dry run; `master.csv` is not touched). BUILT 2026-10-29; gate waiting on David's three checks
 Why dry run: this is the first time a label is attached to every row; mistakes should cost one afternoon, not the master.
 1. Add `python categorise.py --categories-preview` to `categorise.py`. It reads the master, the transfer report
    logic from 1.1, `private_data/rules/category_rules.csv`, `conflicts.csv` and `categories.csv`.

@@ -1,6 +1,7 @@
 """Tests for categorise.py (step 1.1). Run:  python test_categorise.py   All data is made up."""
 import pandas as pd
 import categorise
+import import_rules
 
 
 def make_master(rows):
@@ -78,6 +79,38 @@ def test_paired_rows_report_both_sides():
     report = categorise.label_transfers(master)
     assert len(report) == 2 and set(report['How']) == {'paired'}
     assert set(report['Partner Account']) == {'Checking A', 'Savings B'}
+
+
+RULES = pd.DataFrame([
+    ('safeway', 'contains', 'Groceries', 'mapping'),
+    ('safeway fuel', 'contains', 'Transportation', 'mapping'),
+    ('payment - thank you', 'exact', 'Credit Card Payment', 'mapping'),
+], columns=['Term', 'Match', 'Category', 'Source'])
+
+
+def test_pick_category_order_david_then_single_rule_then_longest_term_then_none():
+    assert categorise.pick_category('safeway fuel 12', RULES, {'safeway fuel 12': 'Gym'}) == ('Gym', 'david')
+    assert categorise.pick_category('safeway 55', RULES, {}) == ('Groceries', 'rule')
+    assert categorise.pick_category('safeway fuel 12', RULES, {}) == ('Transportation', 'longest term')
+    assert categorise.pick_category('mystery shop', RULES, {}) == ('', 'none')
+
+
+def test_assign_categories_sets_kind_and_leaves_transfers_uncategorised_and_master_unchanged():
+    master = make_master([
+        ('2026-01-10', 'SAFEWAY 55', 40.0, 'Card A', 'Credit Card'),
+        ('2026-01-11', 'SAFEWAY 55', -5.0, 'Card A', 'Credit Card'),          # a refund: money in, still categorised
+        ('2026-01-12', 'Internet transfer to Savings', 500.0, 'Checking A', 'Checking'),
+    ])
+    before = master.copy()
+    result = categorise.assign_categories(master, RULES, {}, {2})
+    assert list(result['Kind']) == ['spending', 'money in', 'transfer']
+    assert list(result['Category']) == ['Groceries', 'Groceries', '']
+    assert master.equals(before)
+
+
+def test_rules_outside_the_category_list_are_reported():
+    category_list = pd.DataFrame({'Category': ['Groceries', 'Transportation']})
+    assert categorise.rules_outside_list(RULES, category_list) == ['Credit Card Payment']
 
 
 if __name__ == '__main__':

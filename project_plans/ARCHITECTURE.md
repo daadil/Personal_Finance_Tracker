@@ -21,7 +21,7 @@ money coming in is negative, for every account type (D9).
 |---|---|
 | `main.py` | the whole pipeline; one formatter per issuer |
 | `test_main.py`, `test_categorise.py` | tests on made-up data |
-| `categorise.py` | Stage 1: labels transfers (step 1.1); later categories. Reads the master, never edits it |
+| `categorise.py` | Stage 1: labels transfers (1.1) and applies the category rules as a dry run (1.3). Reads the master, never edits it |
 | `import_rules.py` | Stage 1.2, one-off: old mapping and keyword lists to `private_data/rules/` plus two review files |
 | `test_import_rules.py` | tests for it, made-up data |
 | `measure_categories.py` | read-only: how much of the master the old category sources cover |

@@ -75,3 +75,13 @@ Append-only, newest at the end.
 - David answered the review files and edited four rules (D18). Backed up his rules file; `import_rules.py` now
   refuses to overwrite it. Added `--category-list` and `private_data/rules/categories.csv` (39 categories, 16 with
   no rules yet). Gate for 1.2 PASSED. 22 tests pass. Wrote the step 1.3 spec in full.
+
+## 2026-10-29 (evening)
+- David closed the card-payments question: payments stay dropped (ACTION-ITEMS #21).
+- Built step 1.3: `categorise.py --categories-preview` (Kind and Category per row, written to a local preview
+  file; master untouched) and 3 tests; 26 tests pass in all.
+- Real run: 1,496 rows (122 transfers, 1,271 spending, 103 money in). Credit-card spending rows with a category:
+  81.9% of rows, 70.2% of dollars. Checking: 44.4% of rows, 14.5% of dollars. Longest-term agreed with David's
+  answers 2 of 2. One row was decided by longest term outside his conflicts file: his edit moved `*quince` to
+  Clothes but plain `quince` is still Shopping.
+- Gate NOT closed: David's three checks.
