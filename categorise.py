@@ -1,8 +1,8 @@
-"""Stage 1: label transfers (and, in later steps, categories). Reads master/master.csv, never changes it.
+"""Stage 1: label transfers (and, in later steps, categories). Reads private_data/master/master.csv, never changes it.
 
 Step 1.1 (this file so far): find transfers between David's own accounts.
   python categorise.py --transfers-only
-writes master/transfer_report.csv and prints a summary. Nothing else is written.
+writes private_data/master/transfer_report.csv and prints a summary. Nothing else is written.
 
 A transfer is money that moved between his own accounts. It is neither spending nor income, and it
 makes up most of the dollars in the master, so it has to be found before any category totals mean anything.
@@ -12,8 +12,9 @@ import pandas as pd
 from pathlib import Path
 
 BASE_PATH = Path(__file__).parent
-MASTER_PATH = BASE_PATH / 'master' / 'master.csv'
-REPORT_PATH = BASE_PATH / 'master' / 'transfer_report.csv'
+DATA_PATH = BASE_PATH / 'private_data'   # gitignored as a whole: every file written here stays on this Mac
+MASTER_PATH = DATA_PATH / 'master' / 'master.csv'
+REPORT_PATH = DATA_PATH / 'master' / 'transfer_report.csv'
 
 # Only checking and savings can be both ends of a transfer. A card has no "other side" in the data:
 # card payments are dropped when loading, and a card refund is not a transfer.

@@ -35,7 +35,7 @@ monthly roll-ups, with the data staying on this Mac. Refunds matter (so negative
 discarded), and cash-back credits are kept. Cost: everything Rocket Money does from a bank link (live
 sync, bill negotiation) is out of reach; data arrives only as exported CSVs.
 
-## D8. Reference material lives in a gitignored `reference/` folder (2026-10-19)
+## D8. Reference material lives in a gitignored `private_data/reference/` folder (2026-10-19)
 The old 2023 script, its config (merchant lists), `Mapping.xlsx` and the workflow PDF are copied there so
 any session can find them. They hold personal merchants and account detail, so they are never committed.
 Rejected: committing the scripts alone (the merchant lists are personal). Cost: a fresh clone has no
@@ -54,7 +54,7 @@ Categories first (ACTION-ITEMS #18), because budgets, roll-ups and subscriptions
 draw.io (#15).
 
 ## D11. Transfers come before categories (2026-10-19, measured)
-`measure_categories.py` on the 1,496-row master: of $360k money-out, about $252k (70%) is transfer-like
+`measure_categories.py` on the 1,496-row master: about 70% of the money-out dollars are transfer-like
 (moves between his own accounts, brokerage, CD). Checking is 97% transfers by dollars and Savings is 100%.
 On credit cards alone (no transfers) the old Mapping.xlsx and keyword lists cover 82% of rows and 71% of
 dollars. Overall, before separating transfers, they cover 79% of rows but only 22% of dollars: the number that
@@ -67,7 +67,7 @@ mapping does not know are proposed by Claude into a gitignored review CSV that D
 become rules. Rejected: asking in the terminal each run (200+ distinct payees now) and leaving them blank.
 
 ## D13. Derived data goes in a separate file; the master stays raw (2026-10-19)
-Kind and Category are written to `master/categorised.csv`, rebuilt from the master and the rules. Rejected:
+Kind and Category are written to `private_data/master/categorised.csv`, rebuilt from the master and the rules. Rejected:
 adding category columns to `master.csv`, because the loader's duplicate check and the deleted exports make
 the master the only copy of the raw data, and a rules mistake would then be permanent.
 
@@ -80,3 +80,22 @@ Chase, Fidelity and a CD are not loaded), so 106 rows are labelled by payee word
 Rejected: wording that could also be a real payment ("bill pay", Venmo, PayPal, Zelle). Those rows stay
 unlabelled and show up in the check for David. Cost: some true transfers (P2P cash-outs) stay unlabelled
 until he says so.
+
+## D15. Card payments and the cards that are not loaded (2026-10-29, David and measured)
+Step 1.1's gate passed. David's answers to check (b): the large unlabelled rows are real spending or payments
+on cards or real spending; one was a payment on a closed store card whose purchases are not in the data, one was taxes.
+Measured on the 63 non-transfer Ally Checking rows: no payment to a LOADED card (Capital One, BoA) appears in
+Ally Checking, so nothing is double counted today. The only card payments there are to that closed store card, a card whose own
+purchases are not in the data, so the payment is the only record of that spending and counts as spending.
+Rule: a payment to a card whose purchases ARE loaded is not spending; a payment to a card whose purchases are
+NOT loaded is spending. Risk: when BoA Checking is loaded, its payments to the loaded cards would double count
+(ACTION-ITEMS #19).
+
+## D16. One gitignored folder for everything personal (2026-10-29, David)
+`private_data/` holds the actuals (`inbox/`, `master/`), the training data (`reference/`, `rules/`, `review/`)
+and all outputs (`test_output/`); the .gitignore names that one folder, with the earlier file-type patterns
+kept as a second layer. Before this the data folders sat at the repo root, each with its own ignore line.
+Audited at the same time: no data file has ever been committed on any branch. The docs had carried real
+totals and two named transactions; those are removed from the files but remain in the history of two pushed
+commits (rewriting pushed history is against David's rule, so the choice is his). Cost: a fresh clone has no
+`private_data/` and `main.py` creates the inbox folders on its first run; the reference files come from Drive.

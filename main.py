@@ -1,7 +1,7 @@
 """Personal finance tracker: bank and credit-card export CSVs -> one master CSV.
 
 How it works:
-  1. Drop an account's exported CSV into its folder under  inbox/  (folders are listed in ACCOUNTS below)
+  1. Drop an account's exported CSV into its folder under  private_data/inbox/  (folders are listed in ACCOUNTS below)
   2. Run  python main.py
   3. Each export is converted to the common format, compared with what the master
      already holds for that account, and only the rows the master does not have yet are added.
@@ -18,11 +18,14 @@ from pathlib import Path
 
 # ---------------------------------------------------------------------------
 # Where things live. Everything is relative to this file, so the repo can sit anywhere.
-# inbox/ and master/ are gitignored (except the .gitkeep files): financial data never goes in git.
+# ALL personal financial data lives under private_data/, which is gitignored as a whole:
+# exports (inbox/), the merged master (master/), old reference files, rules, review files, test output.
+# Nothing outside that folder may hold a real transaction.
 # ---------------------------------------------------------------------------
 BASE_PATH = Path(__file__).parent
-INBOX_PATH = BASE_PATH / 'inbox'
-MASTER_PATH = BASE_PATH / 'master' / 'master.csv'
+DATA_PATH = BASE_PATH / 'private_data'
+INBOX_PATH = DATA_PATH / 'inbox'
+MASTER_PATH = DATA_PATH / 'master' / 'master.csv'
 
 # The columns of the master file, in this order.
 MASTER_COLUMNS = ['Posted Date', 'Payee', 'Amount', 'Account', 'Account Type']
@@ -31,7 +34,7 @@ MASTER_COLUMNS = ['Posted Date', 'Payee', 'Amount', 'Account', 'Account Type']
 DUPLICATE_KEY = ['Posted Date', 'Payee', 'Amount', 'Account']
 
 # Every account the script knows about:
-#   (account name written to the master, folder inside inbox/, account type, export format)
+#   (account name written to the master, folder inside private_data/inbox/, account type, export format)
 # The format names are the keys of FORMATS below. Add a new account by adding a line here.
 ACCOUNTS = [
     ('AMEX Delta',                  'AMEX Delta',                  'Credit Card', 'AMEX'),
@@ -248,7 +251,7 @@ def find_new_rows(export_rows, master):
 
 def write_master(master):
     """Write the master to a temp file, then swap it in, so a crash cannot leave half a master."""
-    MASTER_PATH.parent.mkdir(exist_ok=True)
+    MASTER_PATH.parent.mkdir(parents=True, exist_ok=True)
     master = master.sort_values(by=['Posted Date', 'Account'], kind='stable')
     temp_path = MASTER_PATH.with_name('master.csv.tmp')
     master.to_csv(temp_path, index=False)
@@ -284,17 +287,17 @@ def process_inbox():
                 results.append(f"{account_name} / {csv_path.name}: NOT LOADED, file kept. {error}")
 
     # A CSV in a folder that belongs to no account (the inbox root, or a bank folder such as
-    # inbox/Ally/) would otherwise sit there unnoticed.
+    # private_data/inbox/Ally/) would otherwise sit there unnoticed.
     known_folders = [INBOX_PATH / folder_name for _, folder_name, _, _ in ACCOUNTS]
     for stray in sorted(INBOX_PATH.rglob('*.csv')):
         if stray.parent not in known_folders:
-            results.append(f"{stray.relative_to(INBOX_PATH)}: NOT LOADED. Put it in an account folder inside inbox/.")
+            results.append(f"{stray.relative_to(INBOX_PATH)}: NOT LOADED. Put it in an account folder inside private_data/inbox/.")
     return results
 
 
 if __name__ == '__main__':
     lines = process_inbox()
     if not lines:
-        print("Inbox is empty. Drop exports into their account folder inside inbox/ and run again.")
+        print("Inbox is empty. Drop exports into their account folder inside private_data/inbox/ and run again.")
     for line in lines:
         print(line)

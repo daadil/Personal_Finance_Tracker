@@ -34,7 +34,7 @@ Permanently numbered. A resolved item keeps its number and loses its detail.
     they are neither spending nor income, and #14 must separate them or every total double counts.
 14. (Stage 1.1) Keep refunds and cash-back visible, not mixed into spending. Add a transaction kind (purchase, refund,
     cash back, fee, transfer) so reports can show or hide each. Refunds net against their category.
-15. UPDATE THE FINANCIAL WORKFLOW DIAGRAM. `reference/financial_workflow.pdf` is the 2020 set-up (last
+15. UPDATE THE FINANCIAL WORKFLOW DIAGRAM. `private_data/reference/financial_workflow.pdf` is the 2020 set-up (last
     card info updated 2/27/2023): income sources -> checking -> savings / retirement / CD, plus each card's
     earn rates and annual fee. Redraw it for today's accounts in the SAME STYLE: boxes with logos for
     accounts and cards, yellow sticky notes for rules ("transfer excess $x to maintain $20k-$22k"), diamonds
@@ -49,7 +49,14 @@ Permanently numbered. A resolved item keeps its number and loses its detail.
     CSV Ingest, Date Metrics (savings per year), Monthly Expenses per year (each category by month, a
     total row and a monthly-budget row), MappingTable. The new tool must reproduce the monthly-by-category
     roll-up with budget vs actual, an owner column (whose account), and savings per year.
-18. (Stage 1.2 to 1.5) Categories. Source material in `reference/`: `Mapping.xlsx` (about 600 rows: Payee, Search Term, Store,
+18. (Stage 1.2 to 1.5) Categories. Source material in `private_data/reference/`: `Mapping.xlsx` (about 600 rows: Payee, Search Term, Store,
     Category, Agency) and the keyword lists in `config.py` (about 38 category names). Decide how a payee
     becomes a category (the old way was "payee contains keyword", last match wins) and measure it against
     real data before trusting it (CLAUDE.md: measure, do not reason).
+19. When BoA Checking is loaded (its payments to Capital One and BoA cards, "Online payment from CHK ...",
+    are the other side of card payments that are dropped on the card side): label payments to loaded cards as
+    card payments, or every card purchase is counted twice (D15). Payments to cards that are not loaded
+    (a closed store card) stay as spending.
+20. Category notes from David's answers (2026-10-29), for Stage 1.4: a tax payment, a recurring monthly bill and a
+    childcare payee need categories confirmed. They name real merchants and amounts, so the details are in
+    `private_data/review/notes.md` (local only), not here.

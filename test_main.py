@@ -1,5 +1,6 @@
 """Tests for main.py. Run:  python test_main.py
-All data here is made up. The tests point main.py at a temporary folder, never at the real inbox."""
+All data here is made up. The tests point main.py at a temporary folder OUTSIDE the repo, never at
+private_data/."""
 import tempfile
 from pathlib import Path
 import pandas as pd

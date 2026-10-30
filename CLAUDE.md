@@ -7,12 +7,16 @@ bank and credit-card CSV exports, normalises them to one format and (planned) ca
 charts them. Goal (DECISIONS D7): a local replacement for Rocket Money and for David's `Expense Tracker`
 Google Sheet. Started as a one-file script by Julia Wu (2023); David is taking it over.
 
-- **Financial data never goes in git.** The CSV exports and the script's `Output/` are gitignored
-  (see `.gitignore`). The script expects its inputs outside the repo, in a folder tree of
-  `<account type>/<organisation>/<account name>/*.csv`. Never commit, paste into a doc or send anywhere
-  a real transaction, balance or account number.
-- `reference/` (gitignored) holds the old 2023 script, its merchant lists, `Mapping.xlsx` and the 2020
-  `financial_workflow.pdf` diagram. Read ARCHITECTURE.md before using them.
+- **All personal financial data lives in `private_data/`, and that whole folder is gitignored.** That means the
+  actuals (`inbox/` exports, `master/`), the training data (`reference/`: the old script, merchant lists,
+  `Mapping.xlsx`, the 2020 workflow diagram; `rules/`, `review/`) and every output, including anything a dry run
+  or test writes (`test_output/`). A script that writes a file writes it under `private_data/`, never anywhere
+  else in the repo. Tests use a temporary folder outside the repo with made-up rows.
+- **Docs are not data either.** `project_plans/` and commit messages hold counts, percentages and method, never a
+  real transaction, merchant-plus-amount, balance, total or account number. Details go in
+  `private_data/review/notes.md`. (Learned 2026-10-29: earlier docs and two pushed commits carried real totals and
+  two named transactions; they were scrubbed from the files, but they remain in git history.)
+- Read ARCHITECTURE.md before using `private_data/reference/`.
 - Plans live in `project_plans/` (see "Documents" below). Stage 0 is built; later stages are planned with David before any starts.
 - Runs on the MacBook Air (zsh, throwaway venv outside the repo, `/venv/` is gitignored).
 

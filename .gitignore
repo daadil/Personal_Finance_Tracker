@@ -1,24 +1,23 @@
-# Project exclude paths
-/venv/
-.venv/
+# ALL personal financial data lives under private_data/ and nothing in it is ever committed:
+#   inbox/        raw bank exports (the actuals)
+#   master/       the merged master, backups, reports (the actuals, and outputs)
+#   reference/    the old 2023 script, merchant lists, Mapping.xlsx, workflow diagram (training data)
+#   rules/        category rules built from the reference files
+#   review/       files David edits by hand
+#   test_output/  anything a test or dry run writes
+/private_data/
 
-# Financial data: never commit. Exports, outputs and spreadsheets stay on this Mac.
-/data/
-/Output/
+# Second layer, in case a data file ends up somewhere else by mistake.
 *.csv
 *.xlsx
 *.xls
 *.qfx
 *.ofx
 *.pdf
+*.bak
 
-# Master file and anything dropped in the inbox (only the .gitkeep placeholders are tracked)
-/master/
-/inbox/*/*
-!/inbox/*/.gitkeep
-
+# Python and the editor
+/venv/
+.venv/
 __pycache__/
-
-# Reference material from the old tracker (merchant lists, workflow diagram): personal, stays on this Mac
-/reference/
 .DS_Store

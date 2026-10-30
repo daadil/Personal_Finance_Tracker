@@ -50,8 +50,19 @@ Append-only, newest at the end.
 ## 2026-10-19 (night, later)
 - Built `categorise.py --transfers-only` and `test_categorise.py` (8 tests pass; earlier tests still pass).
 - Measured the date window (D14): 8 pairs at every window from 1 day up; set to 3.
-- Real run: 122 transfer rows (16 paired, 106 by wording). Money out $360,485; transfers $237,840;
-  excluding transfers $122,645. Writes only `master/transfer_report.csv`; `master.csv` untouched.
-- Unlabelled but suspicious, for David's check (b): "PNP BILLPAYMENT" $5,105.85 and "MACYS ONLINE PMT" $1,775.53
-  in Ally Joint Checking look like payments to something, not spending in a category.
+- Real run: 122 transfer rows (16 paired, 106 by wording). Roughly two thirds of money-out dollars are transfers.
+  Writes only the transfer report; `master.csv` untouched.
+- Two large unlabelled rows in checking looked like payments, not category spending; David explained both (D15).
 - Gate NOT closed: needs David's checks (a), (b), (c).
+
+## 2026-10-29
+- `categorise.py` failed on David's Mac: the runbook's venv had never been created (I had used a temporary one).
+  Created `~/venvs/finance-tracker`, installed requirements, reran all tests and the report. Runbook steps were right.
+- Step 1.1 gate PASSED on David's three checks (D15).
+- Measured the 63 non-transfer Ally Checking rows: no payment to a loaded card appears there, so no double
+  counting today; payments to a closed store card are the only record of that card's spending (D15, ACTION-ITEMS #19, #20).
+- Wrote the step 1.2 spec in full in BUILD-STAGES. Nothing built.
+- Moved all personal data into one gitignored folder, `private_data/` (D16): inbox, master, reference, plus new
+  rules, review and test_output. Code paths, runbook and docs updated; all 17 tests and a real rerun pass.
+- Audit: no csv, xlsx, pdf or data folder has ever been committed on any branch. Real totals and two named
+  transactions had reached docs and two pushed commits; scrubbed from the files (details moved to a local notes file).

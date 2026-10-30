@@ -4,16 +4,17 @@
 import sys, pandas as pd
 from pathlib import Path
 BASE = Path(__file__).parent
-sys.path.insert(0, str(BASE / 'reference'))
-import config  # the 2023 keyword lists, in the gitignored reference/ folder
+DATA = BASE / 'private_data'
+sys.path.insert(0, str(DATA / 'reference'))
+import config  # the 2023 keyword lists, in private_data/reference/
 
-m = pd.read_csv(BASE / 'master' / 'master.csv')
+m = pd.read_csv(DATA / 'master' / 'master.csv')
 m['p'] = m['Payee'].str.lower()
 spend = m[(m.Amount > 0)].copy()          # money out; refunds/deposits looked at separately
 print('master rows', len(m), '| money-out rows', len(spend), '| money-out $', round(spend.Amount.sum()))
 
 # Source 1: Mapping.xlsx Sheet2 (Payee exact, Search Term substring)
-mp = pd.read_excel(BASE / 'reference' / 'Mapping.xlsx', sheet_name='Sheet2').dropna(subset=['Category'])
+mp = pd.read_excel(DATA / 'reference' / 'Mapping.xlsx', sheet_name='Sheet2').dropna(subset=['Category'])
 exact = dict(zip(mp['Payee'].str.lower().str.strip(), mp['Category']))
 terms = mp.dropna(subset=['Search Term'])
 terms = [(str(t).lower().strip(), c) for t, c in zip(terms['Search Term'], terms['Category']) if len(str(t).strip()) >= 4]
