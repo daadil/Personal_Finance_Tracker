@@ -32,11 +32,11 @@ Verify (David, 15 minutes): open `private_data/master/transfer_report.csv`, (a) 
 "money-out excluding transfers" total is plausible against what he knows he spends.
 Gate: all three checks pass. If one fails, report the failure and the rows; do not move the bar.
 
-### 1.2 Import the old rules (nothing is categorised yet; two review files are written)
+### 1.2 Import the old rules (nothing is categorised yet; two review files are written). BUILT 2026-10-29; gate waiting on David filling in the two files
 Why: the old mapping and keyword lists are the only categories David has already decided; they are the starting
-rules, and where they disagree (72 of 740 rows measured) a human picks.
+rules, and where they disagree a human picks (2 payees, once measured properly: D17).
 1. Build `import_rules.py` (one-off, reads only `private_data/reference/`). Inputs: `private_data/reference/Mapping.xlsx` sheet `Sheet2`
-   (use the `Search Term` and `Category` columns; skip terms shorter than 4 characters) and the keyword lists in
+   (a row with a `Search Term` gives a contains-rule; a row with only a `Category` gives an exact-payee rule; short terms are kept and reported, D17) and the keyword lists in
    `private_data/reference/config.py`. The script holds an explicit table of list name to category name (for example
    `health_and_wellbeing` to "Health & Wellbeing") so it can be audited by eye.
 2. Writes three gitignored files in `private_data/rules/`:
@@ -45,12 +45,12 @@ rules, and where they disagree (72 of 740 rows measured) a human picks.
    - `unknown_categories.csv`: every category the old sources use that is NOT in the 38-name list (D12), with
      the number of rules using it, and an empty column `Map To` for David.
    - `conflicts.csv`: every payee in the master matched by rules that give different categories, with the
-     matching terms, and an empty column `Chosen` for David.
+     matching terms, a `Suggested` category (longest matching term), and an empty column `Chosen` for David.
 3. Prints: rules per source, distinct categories, categories outside the list, conflict count.
 Run: `~/venvs/finance-tracker/bin/python import_rules.py`
 Verify (David, about 30 minutes): fill `Map To` for each unknown category, fill `Chosen` for each conflict.
-Gate: both files fully filled in, and a rerun of `measure_categories.py` still reports about 82% of credit-card
-rows covered (the 2026-10-19 figure, D11), showing the import lost nothing. Precedence among rules (longest term
+Gate: both files fully filled in (`Map To`, `Chosen`), and coverage still about 82% of credit-card rows, showing the
+import lost nothing (measured 81.9%, D17). Precedence among rules (longest term
 wins) is an assumption, tested against the filled-in conflicts in 1.3, not fixed here.
 
 ### 1.3 to 1.5 (decision level; detailed when 1.2's gate passes)

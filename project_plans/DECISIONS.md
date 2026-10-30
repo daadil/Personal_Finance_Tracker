@@ -58,7 +58,7 @@ draw.io (#15).
 (moves between his own accounts, brokerage, CD). Checking is 97% transfers by dollars and Savings is 100%.
 On credit cards alone (no transfers) the old Mapping.xlsx and keyword lists cover 82% of rows and 71% of
 dollars. Overall, before separating transfers, they cover 79% of rows but only 22% of dollars: the number that
-looked fine was the wrong one. The two old sources also disagree on 72 of the 740 rows where both match.
+looked fine was the wrong one. (The 72-of-740 "disagreement" first reported here was an artefact of comparing first matches; see D17.)
 Rejected: categorising first (every total would be dominated by transfers).
 
 ## D12. Category list and new payees (2026-10-19, David)
@@ -99,3 +99,18 @@ Audited at the same time: no data file has ever been committed on any branch. Th
 totals and two named transactions; those are removed from the files but remain in the history of two pushed
 commits (rewriting pushed history is against David's rule, so the choice is his). Cost: a fresh clone has no
 `private_data/` and `main.py` creates the inbox folders on its first run; the reference files come from Drive.
+
+## D17. Importing the old rules: what the measurement changed (2026-10-29)
+Three corrections to the step 1.2 spec, all from running it on the real data:
+1. Conflicts: 2 payees (one "safeway" vs "safeway fuel" pattern), not 72. The 72 compared the first match of
+   each old source, so ordering looked like disagreement. Counting every matching rule per payee gives 2.
+   The longest-term-wins assumption fits both: the file suggests it, David confirms.
+2. Short terms: the spec skipped terms under 4 characters. That was a guess; it would have dropped real stores
+   (a gym, a grocer). They are kept, and the script prints what each short term matches in the master. All 9
+   matched what was intended.
+3. 97 Mapping rows have a category but no search term, only the full payee text. They are imported as exact-match
+   rules instead of being lost.
+Result: 302 rules (198 from the mapping, 32 from config, 72 from both), 23 categories used of the 38. One category
+outside the list: "Credit Card Payment" (6 rules); these are the same payment wording the loader already drops,
+so they never reach the master. Coverage of credit-card money-out rows with the rules: 81.9% (82.1% measured
+before; the denominators differ slightly), so nothing was lost in the import.

@@ -66,3 +66,9 @@ Append-only, newest at the end.
   rules, review and test_output. Code paths, runbook and docs updated; all 17 tests and a real rerun pass.
 - Audit: no csv, xlsx, pdf or data folder has ever been committed on any branch. Real totals and two named
   transactions had reached docs and two pushed commits; scrubbed from the files (details moved to a local notes file).
+
+## 2026-10-29 (later)
+- Built `import_rules.py` and `test_import_rules.py` (5 tests; 21 tests pass in all).
+- Real run: 302 rules, 23 of 38 categories used, 1 category outside the list, 2 conflicts, 81.9% credit-card row
+  coverage (D17). Three corrections to the spec, all from the data (D17).
+- Gate NOT closed: David fills `Map To` (1 row) and `Chosen` (2 rows).
