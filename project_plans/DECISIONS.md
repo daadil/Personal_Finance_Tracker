@@ -122,5 +122,6 @@ edited four rules (two Kohl's rules and Quince from Shopping to Clothes; rover.c
 `private_data/rules/categories.csv` is now the list of allowed categories, with rule counts and his notes; he
 edits it, and `import_rules.py --category-list` refreshes the counts without losing his names or notes.
 `import_rules.py` refuses to overwrite `category_rules.csv` (it would wipe his edits) unless `--force` is given.
-Note: payments on cards that are loaded are still dropped at load (D6), so the category has no rows yet; see
-ACTION-ITEMS #21. Rejected: giving payments a Kind instead of a category (he asked for a category).
+Payments on cards that are loaded stay dropped at load (D6); David decided not to keep them for a cross-check
+("let's not overcomplicate", ACTION-ITEMS #21), so the category has no rows. Rejected: keeping payments to
+reconcile card spend, and giving payments a Kind instead of a category.

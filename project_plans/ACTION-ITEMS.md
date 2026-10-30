@@ -60,8 +60,5 @@ Permanently numbered. A resolved item keeps its number and loses its detail.
 20. Category notes from David's answers (2026-10-29), for Stage 1.4: a tax payment, a recurring monthly bill and a
     childcare payee need categories confirmed. They name real merchants and amounts, so the details are in
     `private_data/review/notes.md` (local only), not here.
-21. OPEN QUESTION for David: he said card payments could serve as a quick summation of all credit-card spend
-    (D18). The card totals already come from the card rows themselves, so payments are not needed for that. They
-    would only help as a monthly cross-check (payments about equal the prior cycle's spend). Keeping them means
-    reversing D6 (payments are dropped at load) and re-downloading the deleted exports, and labelling them so
-    they are never counted as spending (D15). Decide whether the cross-check is worth that.
+21. RESOLVED 2026-10-29 (David): card payments stay dropped at load. No cross-check from payments; card totals
+    come from the card rows. "Credit Card Payment" stays in the category list as a name, with no rows.
