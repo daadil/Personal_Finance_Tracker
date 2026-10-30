@@ -73,13 +73,20 @@ def build_rules(mapping, config_lists):
     return table.sort_values(['Category', 'Term']).reset_index(drop=True)
 
 
+def squeeze(text):
+    """Lowercase and collapse runs of spaces: banks write 'MACYS   .COM' and a rule says 'macys .com'."""
+    return ' '.join(str(text).lower().split())
+
+
 def matching_rules(rules, payee):
-    """All rules that match one payee (already lowercase and stripped)."""
+    """All rules that match one payee. Spacing and capitals are ignored on both sides."""
+    payee = squeeze(payee)
     hits = []
     for _, rule in rules.iterrows():
-        if rule['Match'] == 'contains' and rule['Term'] in payee:
+        term = squeeze(rule['Term'])
+        if rule['Match'] == 'contains' and term in payee:
             hits.append(rule)
-        elif rule['Match'] == 'exact' and rule['Term'] == payee:
+        elif rule['Match'] == 'exact' and term == payee:
             hits.append(rule)
     return hits
 

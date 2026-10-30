@@ -19,7 +19,7 @@ makes up most of the dollars in the master, so it has to be found before any cat
 import sys
 import pandas as pd
 from pathlib import Path
-from import_rules import matching_rules   # one definition of 'which rules match a payee'
+from import_rules import matching_rules, squeeze   # one definition of 'which rules match a payee'
 
 BASE_PATH = Path(__file__).parent
 DATA_PATH = BASE_PATH / 'private_data'   # gitignored as a whole: every file written here stays on this Mac
@@ -156,6 +156,7 @@ def pick_category(payee, rules, chosen):
     Order: David's answer for this exact payee in conflicts.csv; else the one category the rules give; else,
     if rules disagree, the category of the longest matching term; else nothing.
     """
+    payee = squeeze(payee)
     if payee in chosen:
         return chosen[payee], 'david'
     hits = matching_rules(rules, payee)
@@ -178,7 +179,7 @@ def assign_categories(master, rules, chosen, transfer_indexes):
     result.loc[result.index.isin(transfer_indexes), 'Kind'] = 'transfer'
 
     # Work out each distinct payee once; the same payee text repeats many times.
-    lowered = result['Payee'].astype(str).str.lower().str.strip()
+    lowered = result['Payee'].map(squeeze)
     answers = {payee: pick_category(payee, rules, chosen) for payee in lowered.unique()}
     result['Category'] = [answers[p][0] for p in lowered]
     result['How'] = [answers[p][1] for p in lowered]
@@ -263,11 +264,11 @@ def rules_from_review(review, rules, category_list):
 
 def report_new_rules(new_rules, all_rules, master):
     """For each new rule: how many master rows it matches, and whether it now makes any payee ambiguous."""
-    payees = master['Payee'].astype(str).str.lower().str.strip()
+    payees = master['Payee'].map(squeeze)
     for _, rule in new_rules.iterrows():
-        matched = [p for p in payees.unique() if rule['Term'] in p]
+        matched = [p for p in payees.unique() if squeeze(rule['Term']) in p]
         clashes = [p for p in matched if len({h['Category'] for h in matching_rules(all_rules, p)}) > 1]
-        print(f"  '{rule['Term']}' -> {rule['Category']}: matches {int(payees.str.contains(rule['Term'], regex=False).sum())} rows"
+        print(f"  '{rule['Term']}' -> {rule['Category']}: matches {int(payees.str.contains(squeeze(rule['Term']), regex=False).sum())} rows"
               + (f"  (!) {len(clashes)} payees now match two categories, e.g. {clashes[0][:40]}" if clashes else ''))
 
 

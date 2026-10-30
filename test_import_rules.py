@@ -70,6 +70,14 @@ def test_category_list_counts_rules_and_matching_rows_and_keeps_notes():
     assert 'Credit Card Payment' in set(table['Category'])      # used by a rule, so added to the list
 
 
+def test_matching_ignores_capitals_and_extra_spaces():
+    rules = pd.DataFrame([('macys .com', 'contains', 'Shopping', 'david'),
+                          ('best buy      00012', 'exact', 'Shopping', 'mapping')],
+                         columns=['Term', 'Match', 'Category', 'Source'])
+    assert len(ir.matching_rules(rules, 'MACYS   .COM')) == 1
+    assert len(ir.matching_rules(rules, 'BEST BUY 00012')) == 1
+
+
 if __name__ == '__main__':
     for name, test in list(globals().items()):
         if name.startswith('test_'):

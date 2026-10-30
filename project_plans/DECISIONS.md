@@ -137,3 +137,15 @@ David copying them into `Your Category`: he asked not to overcomplicate, and wro
 than a copy and paste. Rejected: an accept-all-suggestions switch. "Taxes" was added as a new category at his
 request, separate from Property Tax. Anything he calls a store card payment (a card not loaded) is categorised
 "Credit Card Payment" and still counts as spending (D15).
+
+## D20. Second review batch: what was held, fixed and found (2026-10-29)
+David filled in 169 of 182 rows. Applied 163 rules with no payee matching two categories. Three judgment calls:
+1. "Subscription" was not in his list; read as the typo it is and applied as "Subscriptions" (said so to him).
+2. His category for the bank's "Interest Paid" lines (Credit Card Fees) was held back, not applied: all 37 rows
+   are money coming in on savings and checking, which is interest earned (Income). Card interest he pays is a
+   different payee and already has a rule. Held pending his word; the rows stay uncategorised meanwhile.
+3. His "eCheck deposit" is categorised Taxes (he said that is what he sees when paying property tax) although
+   the one row is money in. Applied as told.
+Found by running it: two new rules matched 0 rows because the bank writes payees with irregular double spaces.
+Matching now ignores capitals and extra spaces on both sides (test added). Also: four rows (two credits, an
+adjustment, a rebill of the same amount) net to zero, so leaving them uncategorised changes no total.

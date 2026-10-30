@@ -71,7 +71,7 @@ payees are ones he expects to be unknown; (c) the longest-term pick matched his 
 Gate: no wrong category in (a), and (b) and (c) reviewed. Coverage has no target number: it is reported, and he
 judges it (CLAUDE.md: a number is measured, not argued).
 
-### 1.4 The review loop (BUILT 2026-10-29; first batch applied, second batch waiting on David)
+### 1.4 The review loop (BUILT 2026-10-29; both batches applied; gate waiting on David's spot-check)
 Why a file: there are about 180 distinct uncategorised payees; a human decides, the script only records.
 1. `python categorise.py --review-file` writes `private_data/review/uncategorised.csv`: every uncategorised payee
    (transfers excluded), biggest dollars first, with Rows, Dollars, a `Term` (first two words, to shorten or
@@ -86,8 +86,9 @@ Why a file: there are about 180 distinct uncategorised payees; a human decides, 
 Verify (David): after applying, the printed match counts look right (a term that matches far more rows than the
 payee had is too broad) and the preview's 20 random rows are still all correct.
 Gate: no wrong category in the new preview's 20 random rows; he is happy with what is left uncategorised.
-Result so far: first batch (his ten answers, 22 payee variants) applied as 10 rules; credit-card spending rows with
-a category went from 81.9% to 83.2% (70.2% to 82.3% of dollars); checking spending is now fully categorised.
+Result: first batch (his ten answers) 81.9% to 83.2% of credit-card spending rows; second batch (163 rules from the
+review file) to 99.0% of rows and 98.3% of dollars; checking and savings spending 100%. 52 spending rows are still
+uncategorised (unclear payees, plus one held interest rule, D20). Of 103 money-in rows, 63 have a category.
 
 ### 1.5 Write `private_data/master/categorised.csv` (Kind, Category added). Tests on made-up data for every rule type.
 

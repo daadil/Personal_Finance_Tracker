@@ -92,3 +92,8 @@ Append-only, newest at the end.
 - Regenerated the review file for what is left: 182 payees, 284 rows; wrote suggested categories for 146; 36 left blank
   because they are unclear (transfers, adjustments, unknown merchants). Nothing applied.
 - New open item #22: transfer wording the step 1.1 list missed.
+- David filled in the review file (169 of 182 rows; Venmo cashout is Income, eCheck deposit is Taxes). Fixed one typo,
+  held one wrong-looking answer (D20), applied 163 rules; two matched nothing because of irregular spacing, so matching
+  now ignores extra spaces (30 tests pass in all).
+- Coverage now: credit-card spending 99.0% of rows (98.3% of dollars); checking and savings spending 100%; money in
+  63 of 103 rows. Remaining blanks are unclear payees, a held interest rule, and a netted-out adjustment.
